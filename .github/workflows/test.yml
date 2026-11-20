@@ -1,0 +1,23 @@
+name: Test
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build
+        run: node tools/build.mjs
+      - name: Controlla che la build pubblicata sia aggiornata
+        run: git diff --exit-code -- index.html android/app/src/main/assets/index.html || (echo "Esegui 'npm run build' e committa index.html" && exit 1)
+      - name: Test
+        run: npx playwright test --trace off

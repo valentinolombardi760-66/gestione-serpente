@@ -6,8 +6,16 @@ App web (PWA) in italiano per gestire parametri, salute e routine di un serpente
 Su Android apri il link in Chrome → ⋮ → *Installa app*. Funziona offline; i dati restano nel browser del dispositivo (usa *Esporta Backup JSON* in Impostazioni).
 
 ## Struttura
-- `index.html` — l'app completa (CSS e JS inclusi, Chart.js 4.4.1 incluso per l'uso offline)
-- `manifest.webmanifest`, `sw.js`, `icons/` — installazione e funzionamento offline
-- `android/` — progetto Android (WebView) opzionale per generare un APK
+- `src/index.html` — **il sorgente da modificare** (Chart.js caricato da CDN)
+- `index.html` — l'app pubblicata, generata da `npm run build` (Chart.js incluso per l'uso offline)
+- `manifest.webmanifest`, `sw.js`, `icons/` — installazione, offline, scorciatoie e promemoria
+- `tests/` — test automatici Playwright (PC e telefono), eseguiti da GitHub Actions a ogni push
+- `android/` — progetto Android (WebView) opzionale; i suoi asset vengono aggiornati dalla build
 
-Quando modifichi `index.html`, cambia `VERSION` in `sw.js` così i telefoni ricevono l'aggiornamento.
+## Sviluppo
+```
+npm install
+npm run build   # rigenera index.html e gli asset Android
+npm test        # build + test su PC e telefono
+```
+A ogni rilascio cambia `VERSION` in `sw.js`, così i telefoni ricevono l'aggiornamento.

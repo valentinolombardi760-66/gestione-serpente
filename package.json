@@ -1,0 +1,15 @@
+{
+  "name": "snakecheck",
+  "version": "4.0.0",
+  "private": true,
+  "description": "SNAKEcheck: gestione del serpente del grano (PWA a file singolo)",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "test": "node tools/build.mjs && playwright test --trace off"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "chart.js": "4.4.1"
+  }
+}

@@ -10,7 +10,67 @@
   "background_color": "#090a0d",
   "theme_color": "#090a0d",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registra pasto",
+      "short_name": "Pasto",
+      "description": "Registra un pasto",
+      "url": "./index.html?azione=pasto#dashboard",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Nuova lettura clima",
+      "short_name": "Clima",
+      "description": "Temperatura e umidità",
+      "url": "./index.html?azione=clima#clima",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Acqua cambiata",
+      "short_name": "Acqua",
+      "description": "Segna il cambio dell'acqua",
+      "url": "./index.html?azione=acqua#dashboard",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Cerca",
+      "short_name": "Cerca",
+      "description": "Cerca nel registro",
+      "url": "./index.html?azione=cerca#dashboard",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
