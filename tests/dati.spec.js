@@ -57,7 +57,7 @@ test('import con "Unisci" non duplica e crea una copia di sicurezza', async ({ p
   extra.logs.feeding.push({ data: '2026-01-02', preda: 'Pinky', pesoPreda: 1, statoPreda: 'Decongelato', esito: 'Mangiato' });
   extra.logs.feeding.push({ data: 'data sbagliata', preda: 'Pinky', esito: 'Mangiato' });
   await page.locator('#importFile').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(extra)) });
-  await expect(page.locator('.imp-drop')).toBeVisible();
+  await expect(page.locator('.imp-drop:not(.help-drop)')).toBeVisible();
   await page.locator('[data-do-imp]').click();
   await expect.poll(async () => { const n = await state(page); return Object.values(n.logs).reduce((a, l) => a + l.length, 0); }).toBe(total + 1);
   await expect.poll(() => page.evaluate(async () => (await Safety.list()).length)).toBeGreaterThan(0);
