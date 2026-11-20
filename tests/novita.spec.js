@@ -78,3 +78,17 @@ test('telefono: il menu porta a spese e storia', async ({ page }, info) => {
   await page.locator('.menu-item', { hasText: 'Storia' }).click();
   await expect(page.locator('#view-storia')).toBeVisible();
 });
+
+test('giungla: menu in alto su PC, etichette nel terrario e acqua vecchia segnalata', async ({ page }, info) => {
+  const errors = await openApp(page, { data: base({ logs: { env: [{ datetime: iso(0) + 'T09:00', tempCalda: 30, tempFredda: 24, umidita: 50 }], maintenance: [{ data: iso(9), tipo: 'Cambio acqua' }] } }) });
+  await expect(page.locator('#terraWrap .pin-label').first()).toBeVisible();
+  await expect(page.locator('.terra-legend')).toContainText('Acqua da cambiare');
+  if (info.project.name === 'pc') {
+    const r = await page.evaluate(() => ({ dir: getComputedStyle(document.getElementById('sideNav')).flexDirection, h: document.querySelector('.sidebar').offsetHeight }));
+    expect(r.dir).toBe('row');
+    expect(r.h).toBeLessThan(90);
+    await expect(page.locator('#sideNav .nav-item[data-nav="clima"] .ns')).toBeVisible();
+  }
+  await checkView(page);
+  expect(errors).toEqual([]);
+});

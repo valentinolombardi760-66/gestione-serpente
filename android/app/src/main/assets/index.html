@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0d10">
+<meta name="theme-color" content="#0d1f17">
 <meta name="description" content="SNAKEcheck: parametri, salute e routine del serpente del grano (Pantherophis guttatus).">
 <title>SNAKEcheck · Gestione Serpente del Grano</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -17,7 +17,7 @@
 <!-- Font Inter (se offline si usa il font di sistema) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
 
 <!-- Chart.js: se non raggiungibile l'app usa un grafico SVG di riserva -->
 <script>/* Chart.js 4.4.1 (MIT) */
@@ -1166,6 +1166,118 @@ code { font-size: .85em; background: var(--elev); padding: 1px 5px; border-radiu
 .story-ph:hover img { transform: scale(1.05); }
 .story-ph figcaption { font-size: .72rem; color: var(--muted); padding: 6px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 960px) { .story-mhead { top: 60px; } }
+
+/* ==========================================================================
+   12. TEMA GIUNGLA — verde foresta, luce della lampada, terrario protagonista
+   ========================================================================== */
+:root {
+  --canvas: #0d1f17; --card: #16302a; --elev: #1d3a31; --elev-2: #24453a;
+  --border: rgba(234, 242, 227, .07); --border-strong: rgba(234, 242, 227, .14);
+  --text: #eaf2e3; --muted: #a3bfae; --faint: #739483;
+  --ok: #9be15d; --warn: #ffb347; --bad: #ff7a6b; --indigo: #7dd3fc; --lamp: #ffb347;
+  --ok-soft: rgba(155, 225, 93, .13); --warn-soft: rgba(255, 179, 71, .13); --bad-soft: rgba(255, 122, 107, .13); --info-soft: rgba(125, 211, 252, .12);
+  --r-lg: 24px; --r: 18px; --r-sm: 12px;
+  --display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --topnav: 66px;
+}
+:root[data-theme="light"] {
+  --canvas: #f1f4ec; --card: #ffffff; --elev: #e8eee2; --elev-2: #dde6d5;
+  --border: rgba(16, 38, 27, .08); --border-strong: rgba(16, 38, 27, .15);
+  --text: #10261b; --muted: #4d6556; --faint: #6c8475;
+  --ok: #3d8a1f; --warn: #b86a00; --bad: #c8372d; --indigo: #0369a1; --lamp: #c77700;
+  --ok-soft: rgba(61, 138, 31, .1); --warn-soft: rgba(184, 106, 0, .1); --bad-soft: rgba(200, 55, 45, .08); --info-soft: rgba(3, 105, 161, .08);
+}
+body { background: var(--canvas); background-image: radial-gradient(900px 520px at 100% -8%, color-mix(in srgb, var(--lamp) 7%, transparent), transparent 62%); background-attachment: fixed; }
+h1 { font-weight: 800; letter-spacing: -.03em; }
+.card { border-color: var(--border); }
+.kpi-value, .stat b, .pop-val, .hero-name h2, .tp-title h2 { font-family: var(--display); letter-spacing: -.03em; }
+.b-info { background: var(--info-soft); color: var(--indigo); }
+.brand-name { font-family: var(--display); font-weight: 800; }
+.brand-name b { color: var(--accent); }
+.brand-mark { background: var(--accent); }
+.brand-mark .ic { color: var(--accent-ink); }
+
+/* PC: menu orizzontale in alto al posto della barra laterale */
+@media (min-width: 961px) {
+  .sidebar { inset: 0 0 auto 0; width: auto; height: var(--topnav); flex-direction: row; align-items: center; gap: 26px; padding: 0 32px; border-right: 0; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--canvas) 86%, transparent); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); z-index: 45; }
+  .sidebar .brand { margin: 0; padding: 0; flex: none; }
+  .sidebar .brand-sub, .sidebar .nav-label, .sidebar-foot { display: none; }
+  #sideNav { flex-direction: row; gap: 2px; align-items: center; flex: 1; min-width: 0; }
+  .nav-item { padding: 9px 14px; border-radius: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; width: auto; }
+  .nav-item .ico, .nav-item .kbd, .nav-item .nl { display: none; }
+  .sidebar .nav-item .ns { display: inline; }
+  .nav-item.active, .nav-item.active .ico { color: var(--accent); }
+  .nav-item[data-nav="impostazioni"] { margin-left: auto; }
+  .nav-item .count { margin-left: 6px; }
+  .nav-ind { left: 0; right: auto; background: var(--accent-soft); }
+  .nav-ind::before { display: none; }
+  .shell { margin-left: 0; padding-top: var(--topnav); }
+  .topbar, body.scrolled .topbar { position: relative; top: auto; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom-color: transparent; padding: 28px 36px 18px; }
+  body.scrolled .topbar h1 { font-size: 1.6rem; }
+  .content { max-width: 1380px; }
+}
+@media (min-width: 961px) and (max-width: 1180px) { .sidebar { gap: 14px; padding: 0 18px; } .sidebar .brand-name { display: none; } .nav-item { padding: 9px 10px; font-size: .9rem; } }
+.nav-item .ns { display: none; }
+
+/* Home: terrario grande a sinistra, schede a destra */
+.jungle { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.terra-panel { padding: 18px; background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--card) 70%, var(--canvas))); }
+.tp-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.tp-head .hero-avatar { width: 52px; height: 52px; border-radius: 16px; font-size: 26px; flex: none; }
+.tp-title { flex: 1; min-width: 0; }
+.tp-title h2 { font-size: 1.55rem; font-weight: 800; line-height: 1.1; }
+.tp-title .hero-meta { margin-top: 6px; align-items: center; }
+.tp-head .status-pill { flex: none; }
+.terra-panel .terra { border-radius: 18px; }
+.jungle-side { display: flex; flex-direction: column; gap: 18px; }
+.jungle-side .today-card { margin: 0; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--card)), var(--card) 70%); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.jungle-side .today-txt h2 { font-size: 1.7rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+.kpi-grid { gap: 14px; }
+.kpi-grid .kpi-value { font-size: 2rem; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.mini-spark { margin-left: auto; align-self: center; }
+@media (max-width: 1180px) { .jungle { grid-template-columns: minmax(0, 1fr); } }
+
+/* Etichette "appese" nel terrario */
+.pin-bg { fill: rgba(10, 26, 19, .8); stroke: rgba(234, 242, 227, .12); }
+.pin-label { font: 800 11px var(--font); letter-spacing: .08em; }
+.hs-text { font: 800 21px var(--display); fill: #fff; }
+.t-zone { fill: rgba(234, 242, 227, .4); }
+.water { transition: rx .6s var(--ease), ry .6s var(--ease); }
+@media (min-width: 561px) { .pin-g { transform-box: fill-box; transform-origin: left center; transform: scale(1.18); } .pin-g.pin-l { transform-origin: right center; } }
+
+/* Telefono: terrario a tutta larghezza in cima */
+@media (max-width: 960px) {
+  .bottom-nav { background: color-mix(in srgb, var(--card) 92%, transparent); }
+  .jungle { gap: 14px; }
+  .terra-panel { margin: -16px -16px 0; padding: 0 0 14px; border-radius: 0 0 28px 28px; border-width: 0 0 1px; background: var(--card); }
+  .terra-panel .terra { border-radius: 0; }
+  .terra-panel .tp-head { order: 2; padding: 14px 16px 0; margin: 0; }
+  .terra-panel { display: flex; flex-direction: column; }
+  .terra-panel .terra-wrap { order: 1; }
+  .terra-panel .terra-legend { order: 3; padding: 0 16px; }
+  .terra-panel #terraPop { margin-left: 12px !important; margin-right: 12px !important; }
+  .tp-head { flex-wrap: wrap; }
+  .tp-head .status-pill { width: 100%; justify-content: center; }
+  .tp-title h2 { font-size: 1.35rem; }
+  .jungle-side .today-txt h2 { font-size: 1.4rem; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kpi-grid .kpi-value { font-size: 1.6rem; }
+  .mini-spark { display: none; }
+}
+@media (max-width: 560px) { .pin-g { transform-box: fill-box; transform-origin: left center; transform: scale(1.65); } .pin-g.pin-l { transform-origin: right center; } .pin-label { font-size: 11px; } .hs-text { font-size: 21px; } }
+[data-theme="light"] .terra-panel { background: #fff; }
+.terra-pop { background: color-mix(in srgb, var(--card) 94%, transparent); border: 1px solid var(--border-strong); }
+[data-theme="light"] body.scrolled .topbar { background: rgba(241, 244, 236, .88); }
+@media (max-width: 960px) { [data-theme="light"] .bottom-nav { background: rgba(255, 255, 255, .92); } }
+
+/* Superfici in verde al posto dei grigi del tema precedente */
+:root:not([data-theme="light"]) .modal { background: #153028; }
+:root:not([data-theme="light"]) .toast { background: rgba(22, 48, 42, .97); }
+:root:not([data-theme="light"]) .rtable thead th { background: #1a362e; }
+.overlay { background: rgba(4, 12, 8, .55); }
+:root:not([data-theme="light"]) body.scrolled .topbar { background: rgba(13, 31, 23, .86); }
+@media (max-width: 960px) { :root:not([data-theme="light"]) .bottom-nav { background: rgba(22, 48, 42, .9); box-shadow: 0 20px 50px -18px rgba(0, 0, 0, .8); } }
+.story-ev.big .story-dot { color: #0d1f17; }
 </style>
 </head>
 <body>
@@ -3427,7 +3539,9 @@ const Motion = (() => {
       let ind = side.querySelector('.nav-ind');
       if (!ind) { ind = document.createElement('span'); ind.className = 'nav-ind'; side.prepend(ind); }
       const a = side.querySelector('.nav-item.active');
-      if (a) { ind.style.height = `${a.offsetHeight}px`; ind.style.transform = `translateY(${a.offsetTop}px)`; ind.style.opacity = 1; } else ind.style.opacity = 0;
+      const row = getComputedStyle(side).flexDirection === 'row';
+      if (a && row) { ind.style.height = `${a.offsetHeight}px`; ind.style.width = `${a.offsetWidth}px`; ind.style.transform = `translate(${a.offsetLeft}px, ${a.offsetTop}px)`; ind.style.opacity = 1; }
+      else if (a) { ind.style.width = ''; ind.style.height = `${a.offsetHeight}px`; ind.style.transform = `translateY(${a.offsetTop}px)`; ind.style.opacity = 1; } else ind.style.opacity = 0;
     }
     const bn = document.getElementById('bottomNav');
     if (bn && getComputedStyle(bn).display !== 'none') {
@@ -3746,27 +3860,32 @@ const Terrarium = (() => {
       const cur = now[k];
       const r = Logic.range(k), ev = Logic.evalParam(k, cur ? cur.v : null), c = colorOf(ev.status);
       const val = cur ? Utils.fmtNum(cur.v, k === 'umidita' ? '%' : '°') : '—';
-      const chipW = 14 + val.length * 8.5;
+      const chipW = 124, PIN = { tempCalda: 'LATO CALDO', tempFredda: 'LATO FREDDO', umidita: 'UMIDITÀ' }[k];
       const left = k === 'tempCalda';
       btns.push(`<button type="button" class="hs-btn${left ? ' hs-left' : ''}" data-hotspot="${k}" aria-label="${r.label}: ${val}, ${ev.label}" style="left:${pos.x / VB.w * 100}%;top:${pos.y / VB.h * 100}%;--chip:${(chipW + 40) / VB.w * 100}%"></button>`);
-      return `<g class="hotspot" data-hs="${k}" transform="translate(${pos.x} ${pos.y})" pointer-events="none">
+      return `<g class="hotspot" data-hs="${k}" transform="translate(${pos.x} ${pos.y})" pointer-events="none"><g class="pin-g${left ? ' pin-l' : ''}">
           <circle class="hs-ring" r="20" fill="none" stroke="${c}" stroke-width="2"/>
           <circle class="hs-core" r="12" fill="${c}" fill-opacity=".22" stroke="${c}" stroke-width="2"/>
           <circle r="4" fill="${c}"/>
-          <g transform="translate(${left ? -(chipW + 28) : 28} -13)">
-            <rect width="${chipW}" height="26" rx="13" fill="rgba(9,10,13,.78)" stroke="${c}" stroke-opacity=".5"/>
-            <text x="${chipW / 2}" y="17.5" text-anchor="middle" class="hs-text">${val}</text>
+          <g transform="translate(${left ? -(chipW + 26) : 26} -27)">
+            <rect class="pin-bg" width="${chipW}" height="54" rx="16"/>
+            <rect x="0" y="12" width="3" height="30" rx="1.5" fill="${c}"/>
+            <text x="16" y="22" class="pin-label" fill="${c}">${PIN}</text>
+            <text x="16" y="45" class="hs-text">${val}</text>
           </g>
-        </g>`;
+        </g></g>`;
     }).join('');
+    const water = Logic.waterState();
+    const wl = water.last ? Utils.clamp(1 - water.days / (water.target * 2.5), .35, 1) : .7;
+    const murky = water.last && water.status !== 'ok';
     const heat = brum ? .12 : now.tempCalda ? Utils.clamp((now.tempCalda.v - 24) / 12, .15, 1) : .45;
 
     return `<div class="terra-wrap" id="terraWrap" data-phase="${ph}" data-brum="${brum ? 1 : 0}">
       <svg class="terra" viewBox="0 0 ${VB.w} ${VB.h}" role="group" aria-label="Terrario interattivo">
         <defs>
-          <linearGradient id="tWall" x1="0" x2="1"><stop offset="0" stop-color="#0d1a24"/><stop offset=".5" stop-color="#121417"/><stop offset="1" stop-color="#26150e"/></linearGradient>
-          <radialGradient id="tHeat" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(690 40) scale(330 300)"><stop offset="0" stop-color="#fb923c" stop-opacity="${f2(.55 * heat)}"/><stop offset=".45" stop-color="#f97316" stop-opacity="${f2(.18 * heat)}"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></radialGradient>
-          <radialGradient id="tCool" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(90 130) scale(260 240)"><stop offset="0" stop-color="#38bdf8" stop-opacity=".22"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0"/></radialGradient>
+          <linearGradient id="tWall" x1="0" x2="1"><stop offset="0" stop-color="#173b3a"/><stop offset=".5" stop-color="#22432f"/><stop offset="1" stop-color="#4a3420"/></linearGradient>
+          <radialGradient id="tHeat" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(690 40) scale(330 300)"><stop offset="0" stop-color="#ffb347" stop-opacity="${f2(.6 * heat)}"/><stop offset=".45" stop-color="#ff9f2e" stop-opacity="${f2(.18 * heat)}"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></radialGradient>
+          <radialGradient id="tCool" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(90 130) scale(260 240)"><stop offset="0" stop-color="#7dd3fc" stop-opacity=".16"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0"/></radialGradient>
           <linearGradient id="tSub" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a5636"/><stop offset="1" stop-color="#3b2716"/></linearGradient>
           <pattern id="tGrain" width="14" height="10" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.1" fill="#a07850" opacity=".55"/><circle cx="10" cy="7" r=".9" fill="#2a1a0e" opacity=".6"/><rect x="6" y="1" width="3" height="1" fill="#c49a6c" opacity=".35" transform="rotate(25 7 1)"/></pattern>
           <linearGradient id="tWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#67e8f9" stop-opacity=".9"/><stop offset="1" stop-color="#0e7490" stop-opacity=".9"/></linearGradient>
@@ -3782,8 +3901,8 @@ const Terrarium = (() => {
           <text x="766" y="44" class="t-zone" text-anchor="end" dx="-118">ZONA CALDA</text>
           <!-- Piante sullo sfondo -->
           <g opacity=".9">
-            <path d="M70 360 C60 290 40 250 20 220 C55 245 78 290 84 350 Z" fill="#2f6b3f"/>
-            <path d="M88 360 C92 280 110 230 140 200 C120 250 108 300 100 360 Z" fill="#3f8a52"/>
+            <path d="M70 360 C60 290 40 250 20 220 C55 245 78 290 84 350 Z" fill="#4f9d5d"/>
+            <path d="M88 360 C92 280 110 230 140 200 C120 250 108 300 100 360 Z" fill="#9be15d" opacity=".75"/>
             <path d="M60 360 C70 300 90 270 120 255 C100 285 85 320 78 360 Z" fill="#26593a"/>
             <path d="M740 360 C748 310 770 280 792 266 L792 300 C775 315 760 335 756 360 Z" fill="#2f6b3f" opacity=".8"/>
           </g>
@@ -3811,11 +3930,14 @@ const Terrarium = (() => {
           <!-- Ciotola dell'acqua -->
           <g>
             <ellipse cx="262" cy="384" rx="66" ry="20" fill="#1f242d" stroke="rgba(255,255,255,.12)"/>
-            <ellipse cx="262" cy="378" rx="56" ry="13" fill="url(#tWater)"/>
-            <ellipse cx="244" cy="375" rx="16" ry="3" fill="#fff" opacity=".35" class="water-shine"/>
+            <ellipse cx="262" cy="${f2(378 + 5 * (1 - wl))}" rx="${f2(56 * (.75 + .25 * wl))}" ry="${f2(13 * (.75 + .25 * wl))}" fill="${murky ? '#6f8d5e' : 'url(#tWater)'}" class="water"/>
+            ${murky ? '' : '<ellipse cx="244" cy="375" rx="16" ry="3" fill="#fff" opacity=".35" class="water-shine"/>'}
           </g>
           <!-- Piccola pianta in primo piano (zona calda) -->
-          <path d="M740 380 C736 340 720 318 700 306 C722 312 742 336 750 380 Z" fill="#3f8a52" opacity=".9"/>
+          <path d="M740 380 C736 340 720 318 700 306 C722 312 742 336 750 380 Z" fill="#4f9d5d" opacity=".95"/>
+          <path d="M762 380 C764 350 776 330 792 322 L792 340 C782 350 772 362 770 380 Z" fill="#9be15d" opacity=".7"/>
+          <g fill="#4f9d5d"><ellipse cx="760" cy="96" rx="44" ry="13" transform="rotate(-32 760 96)"/><ellipse cx="786" cy="140" rx="34" ry="11" transform="rotate(18 786 140)"/></g>
+          <ellipse cx="770" cy="118" rx="26" ry="8" fill="#9be15d" opacity=".7" transform="rotate(-50 770 118)"/>
           <!-- Serpente -->
           <g class="snake-g" data-snake role="button" tabindex="0" aria-label="${Utils.esc(st.profile.nome || 'Serpente')} · ${Utils.esc(look.label)}. Apri la scheda">
             ${Snake.svg(look, SNAKE_PTS, { B: 25, uid: 'tsn' })}
@@ -3834,11 +3956,12 @@ const Terrarium = (() => {
     </div>
     <div class="terra-legend">
       <span class="badge b-neutral" id="terraPhase">${phaseBadge(ph)}</span>
+      ${murky ? `<span class="badge b-warn">${I('drop')} Acqua da cambiare</span>` : ''}
       ${brum ? `<span class="badge b-info">${I('moon')} Brumazione</span>` : ''}
       <span class="badge b-neutral">🏠 ${Utils.esc(st.profile.terrarioDimensioni || 'Dimensioni non impostate')}</span>
-      ${st.profile.substrato ? `<span class="badge b-neutral">🪵 ${Utils.esc(st.profile.substrato)}</span>` : ''}
-      ${st.profile.sorgenteCalore ? `<span class="badge b-neutral">🔥 ${Utils.esc(st.profile.sorgenteCalore)}</span>` : ''}
-      <span class="faint small terra-tip">Tocca le zone o il serpente</span>
+      ${st.profile.substrato ? `<span class="badge b-neutral hide-xs">🪵 ${Utils.esc(st.profile.substrato)}</span>` : ''}
+      ${st.profile.sorgenteCalore ? `<span class="badge b-neutral hide-xs">🔥 ${Utils.esc(st.profile.sorgenteCalore)}</span>` : ''}
+      <span class="faint small terra-tip hide-xs">Tocca le zone o il serpente</span>
     </div>`;
   }
   const f2 = n => (Math.round(n * 100) / 100).toString();
@@ -4408,7 +4531,7 @@ const Notify = (() => {
 const Theme = (() => {
   const KEY = 'snakecheck.ui';
   const ACCENTS = [
-    ['verde', 'Verde', '#3ddc97'], ['arancio', 'Arancio', '#fb923c'], ['corallo', 'Corallo', '#f87171'], ['rosa', 'Rosa', '#f472b6'],
+    ['verde', 'Foglia', '#9be15d'], ['arancio', 'Arancio', '#fb923c'], ['corallo', 'Corallo', '#f87171'], ['rosa', 'Rosa', '#f472b6'],
     ['viola', 'Viola', '#a78bfa'], ['azzurro', 'Azzurro', '#38bdf8'], ['giallo', 'Giallo', '#facc15'], ['morph', 'Come il morph', null]
   ];
   const MODES = [['auto', 'Automatico'], ['dark', 'Scuro'], ['light', 'Chiaro']];
@@ -4433,10 +4556,10 @@ const Theme = (() => {
     // In tema chiaro gli accenti molto chiari si scuriscono per restare leggibili
     if (mode === 'light' && lum(hex) > .55) { const [r, g, b] = rgb(hex); hex = '#' + [r, g, b].map(v => Math.round(v * .72).toString(16).padStart(2, '0')).join(''); }
     root.style.setProperty('--accent', hex);
-    root.style.setProperty('--accent-ink', lum(hex) > .4 ? '#0b0d10' : '#ffffff');
+    root.style.setProperty('--accent-ink', lum(hex) > .4 ? '#0d1f17' : '#ffffff');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', mode === 'light' ? '#f4f5f7' : '#0b0d10');
-    if (window.Chart && Chart.defaults) { Chart.defaults.color = mode === 'light' ? '#64748b' : '#6b7584'; Chart.defaults.borderColor = mode === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.06)'; }
+    if (meta) meta.setAttribute('content', mode === 'light' ? '#f1f4ec' : '#0d1f17');
+    if (window.Chart && Chart.defaults) { Chart.defaults.color = mode === 'light' ? '#5b7264' : '#86a593'; Chart.defaults.borderColor = mode === 'light' ? 'rgba(16,38,27,0.08)' : 'rgba(234,242,227,0.07)'; }
   }
   function set(patch) {
     const ui = { ...get(), ...patch };
@@ -4727,6 +4850,17 @@ const Views = (() => {
     </div>`;
   }
 
+  /** Piccola linea dell'andamento del peso, dentro la scheda del peso */
+  function miniSpark(growth) {
+    const v = [...growth].filter(g => g.peso !== null).sort((a, b) => a.data.localeCompare(b.data)).slice(-10).map(g => g.peso);
+    if (v.length < 3) return '';
+    const w = 120, h = 34, min = Math.min(...v), max = Math.max(...v), span = max - min || 1;
+    const pts = v.map((x, i) => [i * w / (v.length - 1), h - 3 - (x - min) / span * (h - 6)]);
+    const d = pts.map((q, i) => `${i ? 'L' : 'M'}${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(' ');
+    const last = pts[pts.length - 1];
+    return `<svg class="mini-spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><path d="${d} L${w} ${h} L0 ${h}Z" fill="var(--accent)" opacity=".14"/><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${last[0]}" cy="${last[1]}" r="3.2" fill="var(--accent)"/></svg>`;
+  }
+
   /* ---------- Dashboard ---------- */
   function dashboard() {
     const st = S(), p = st.profile;
@@ -4762,34 +4896,36 @@ const Views = (() => {
       : kpi({ key: 'water', label: `${I('drop')} Cambio acqua`, status: 'neutral', value: '—', sub: 'Nessun cambio registrato' });
     const loss = Logic.weightLoss();
     const kWeight = weight !== null
-      ? kpi({ key: 'weight', label: `${I('scale')} Peso`, status: loss && loss.pct >= 10 ? 'bad' : trend && trend.diff < 0 ? 'warn' : 'ok', value: `${count(weight, 'k-weight', 1)}<small>g</small>`, sub: trend ? `<b class="c-${trend.diff >= 0 ? 'ok' : 'warn'}">${trend.diff >= 0 ? '+' : ''}${Utils.fmtNum(trend.diff, 'g')}</b> in ${trend.days} giorni · ≈ ${Utils.fmtNum(trend.perMonth, 'g')}/mese` : 'Aggiungi altre misurazioni per il trend' })
+      ? kpi({ key: 'weight', label: `${I('scale')} Peso`, status: loss && loss.pct >= 10 ? 'bad' : trend && trend.diff < 0 ? 'warn' : 'ok', value: `${count(weight, 'k-weight', 1)}<small>g</small>${miniSpark(st.logs.growth)}`, sub: trend ? `<b class="c-${trend.diff >= 0 ? 'ok' : 'warn'}">${trend.diff >= 0 ? '+' : ''}${Utils.fmtNum(trend.diff, 'g')}</b> in ${trend.days} giorni · ≈ ${Utils.fmtNum(trend.perMonth, 'g')}/mese` : 'Aggiungi altre misurazioni per il trend' })
       : kpi({ key: 'weight', label: `${I('scale')} Peso`, status: 'neutral', value: '—', sub: 'Nessuna misurazione' });
 
     const quick = [['feeding', 'mouse', 'Pasto'], ['env', 'thermo', 'Clima'], ['water', 'drop', 'Acqua'], ['growth', 'scale', 'Peso'], ['shed', 'shed', 'Muta'], ['waste', 'waste', 'Feci']];
 
     Terrarium.closePop();
     $('#view-dashboard').innerHTML = `
-      <div class="hero">
-        <button class="hero-avatar" data-snake aria-label="Apri la scheda del serpente" style="cursor:pointer;background:radial-gradient(circle at 30% 25%, ${look.base}, ${look.saddle} 70%, var(--elev))">${I('snake')}</button>
-        <div class="hero-main">
-          <div class="hero-name"><h2>${p.nome ? Utils.esc(p.nome) : 'Il tuo serpente'} <span class="faint" style="font-weight:500">${sex}</span></h2>
-            ${p.morph ? `<span class="badge b-info">${Utils.esc(p.morph)}</span>` : `<button class="badge b-neutral" style="cursor:pointer" data-nav="impostazioni">+ Aggiungi morph</button>`}</div>
-          <div class="hero-meta">
-            <span>${I('cake')} <b>${age ? Utils.esc(age) : '—'}</b></span>
-            <span>${I('scale')} <b>${weight !== null ? Utils.fmtNum(weight, 'g') : '—'}</b></span>
-            <span>${I('ruler')} <b>${Logic.currentLength() !== null ? Utils.fmtNum(Logic.currentLength(), 'cm') : '—'}</b></span>
-            <span class="hide-xs">${I('home')} <b>${Utils.esc(p.terrarioDimensioni || '—')}</b></span>
+      <div class="jungle">
+        <div class="card terra-panel">
+          <div class="tp-head">
+            <button class="hero-avatar" data-snake aria-label="Apri la scheda del serpente" style="cursor:pointer;background:radial-gradient(circle at 30% 25%, ${look.base}, ${look.saddle} 70%, var(--elev))">${I('snake')}</button>
+            <div class="tp-title"><h2>${p.nome ? `La casa di ${Utils.esc(p.nome)}` : 'Il tuo terrario'} <span class="faint" style="font-weight:500">${sex}</span></h2>
+              <div class="hero-meta">
+                ${p.morph ? `<span class="badge b-info">${Utils.esc(p.morph)}</span>` : `<button class="badge b-neutral" style="cursor:pointer" data-nav="impostazioni">+ Aggiungi morph</button>`}
+                <span>${I('cake')} <b>${age ? Utils.esc(age) : '—'}</b></span>
+                <span>${I('scale')} <b>${weight !== null ? Utils.fmtNum(weight, 'g') : '—'}</b></span>
+                <span class="hide-xs">${I('ruler')} <b>${Logic.currentLength() !== null ? Utils.fmtNum(Logic.currentLength(), 'cm') : '—'}</b></span>
+              </div>
+            </div>
+            <button class="status-pill" data-scroll="alertsCard">${statusPill}</button>
           </div>
+          ${Terrarium.html()}
         </div>
-        <div class="hero-status"><button class="status-pill" data-scroll="alertsCard">${statusPill}</button></div>
+        <div class="jungle-side">
+          ${todayCard()}
+          <div class="grid g-2 kpi-grid">${kFeed}${kShed}${kWater}${kWeight}</div>
+        </div>
       </div>
       ${welcome}
-      <div class="grid g-main mt">
-        <div class="card terra-card"><div class="card-head" style="margin-bottom:10px"><h2>Terrario</h2><span class="sub">${Utils.esc(look.label)}</span></div>${Terrarium.html()}</div>
-        ${todayCard()}
-      </div>
       <div class="quick mt">${quick.map(([t, i, l]) => `<button class="quick-btn" ${t === 'water' ? 'data-water' : `data-add="${t}"`}><span class="q-ico">${I(i)}</span><span>${l}</span></button>`).join('')}</div>
-      <div class="grid g-4 mt">${kFeed}${kShed}${kWater}${kWeight}</div>
       <div class="grid g-2 mt">
         <div class="card" id="alertsCard"><div class="card-head"><h2>Avvisi</h2>${nBad ? `<span class="badge b-bad">${nBad} critici</span>` : nWarn ? `<span class="badge b-warn">${nWarn} avvisi</span>` : '<span class="badge b-ok">Nessun problema</span>'}</div>${alertsHTML(al)}</div>
         <div class="card"><div class="card-head"><h2>Clima del terrario</h2><button class="btn btn-sm" data-add="env">${I('plus')} Lettura</button></div>${gauges()}</div>
@@ -4815,10 +4951,10 @@ const Views = (() => {
         <p class="faint small" style="margin:-6px 0 12px">Calda ${Utils.fmtNum(p.tempCaldaMin)}–${Utils.fmtNum(p.tempCaldaMax)}°C · Fredda ${Utils.fmtNum(p.tempFreddaMin)}–${Utils.fmtNum(p.tempFreddaMax)}°C · Notte ${Utils.fmtNum(p.tempNotteMin)}–${Utils.fmtNum(p.tempNotteMax)}°C · UR ${Utils.fmtNum(p.umiditaMin)}–${Utils.fmtNum(p.umiditaMax)}%</p>
         ${Records.block('env')}</div>`;
     Charts.line('env', $('#chart-env'), data.map(e => Utils.fmtAxis(e.datetime)), [
-      { label: 'Zona calda', data: data.map(e => e.tempCalda), color: '#f87171', unit: '°C', fillAlpha: .14 },
-      { label: 'Zona fredda', data: data.map(e => e.tempFredda), color: '#818cf8', unit: '°C', fillAlpha: .08 },
-      ...(hasNight ? [{ label: 'Notte', data: data.map(e => e.tempNotte), color: '#a78bfa', unit: '°C', fill: false }] : []),
-      { label: 'Umidità', data: data.map(e => e.umidita), color: '#22d3ee', axis: 'y1', unit: '%', fillAlpha: .06 }
+      { label: 'Zona calda', data: data.map(e => e.tempCalda), color: '#ffb347', unit: '°C', fillAlpha: .14 },
+      { label: 'Zona fredda', data: data.map(e => e.tempFredda), color: '#7dd3fc', unit: '°C', fillAlpha: .08 },
+      ...(hasNight ? [{ label: 'Notte', data: data.map(e => e.tempNotte), color: '#c4b5fd', unit: '°C', fill: false }] : []),
+      { label: 'Umidità', data: data.map(e => e.umidita), color: '#9be15d', axis: 'y1', unit: '%', fillAlpha: .06 }
     ], { yTitle: '°C', y1Title: '%', emptyMsg: 'Registra delle letture o allarga l\'intervallo.', addType: 'env', band: { min: hot.lo, max: hot.hi, axis: 'y', color: 'rgba(74,222,128,0.09)' } });
   }
 
@@ -5277,7 +5413,7 @@ const Router = (() => {
     { id: 'salute', label: 'Salute', short: 'Salute', icon: 'vet', sub: () => 'Feci, sintomi, visite, farmaci e foto', add: () => Views.tabs.salute === 'foto' ? null : Views.tabs.salute },
     { id: 'gestione', label: 'Spese & Scorte', mobile: 'Spese e scorte', short: 'Spese', icon: 'wallet', sub: () => 'Congelatore, acquisti e costi', add: () => Views.tabs.gestione === 'spese' ? 'expense' : 'stock' },
     { id: 'storia', label: 'Storia', mobile: 'Storia', short: 'Storia', icon: 'book', sub: () => `I momenti importanti di ${Store.get().profile.nome || 'il tuo serpente'}` },
-    { id: 'impostazioni', label: 'Impostazioni', short: 'Altro', icon: 'gear', sub: () => 'Profilo, terrario, aspetto, backup e sincronizzazione' }
+    { id: 'impostazioni', label: 'Impostazioni', short: 'Altro', top: 'Impostazioni', icon: 'gear', sub: () => 'Profilo, terrario, aspetto, backup e sincronizzazione' }
   ];
   const BOTTOM = ['dashboard', 'clima', 'alimentazione', 'cura', 'salute'];
   let current = 'dashboard';
@@ -5285,7 +5421,7 @@ const Router = (() => {
   let booted = false;
 
   function buildNav() {
-    document.getElementById('sideNav').innerHTML = VIEWS.map((v, i) => `<button class="nav-item" data-nav="${v.id}"><span class="ico">${I(v.icon)}</span>${v.label}${v.id === 'dashboard' ? '<span class="count hidden" id="navAlertCount"></span>' : `<span class="kbd">${i + 1}</span>`}</button>`).join('');
+    document.getElementById('sideNav').innerHTML = VIEWS.map((v, i) => `<button class="nav-item" data-nav="${v.id}"><span class="ico">${I(v.icon)}</span><span class="nl">${v.label}</span><span class="ns">${v.top || v.short}</span>${v.id === 'dashboard' ? '<span class="count hidden" id="navAlertCount"></span>' : `<span class="kbd">${i + 1}</span>`}</button>`).join('');
     const items = BOTTOM.map(id => VIEWS.find(v => v.id === id)).map(v => `<button class="bn-item" data-nav="${v.id}" aria-label="${v.label}"><span class="ico">${I(v.icon)}</span>${v.short}</button>`);
     items.splice(2, 0, `<button class="bn-item bn-add" data-open-add aria-label="Registra"><span class="ico">${I('plus')}</span></button>`);
     document.getElementById('bottomNav').innerHTML = items.join('');
