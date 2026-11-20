@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f1115">
-<title>Corn Snake Manager · Gestione Serpente del Grano</title>
+<title>SNAKEcheck · Gestione Serpente del Grano</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Serpente">
+<meta name="apple-mobile-web-app-title" content="SNAKEcheck">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
 
 <!-- Chart.js via CDN: se il caricamento fallisce (offline) l'app usa un grafico SVG di riserva -->
@@ -412,7 +412,7 @@ td.actions { text-align: right; width: 1%; }
     <div class="brand">
       <div class="brand-logo">🐍</div>
       <div>
-        <div class="brand-title">Corn Snake Manager</div>
+        <div class="brand-title">SNAKEcheck</div>
         <div class="brand-sub">Pantherophis guttatus</div>
       </div>
     </div>
@@ -1033,7 +1033,7 @@ const Store = (() => {
       commit();
       return state.logs[type].length !== before;
     },
-    export() { return JSON.stringify({ ...state, exportedAt: new Date().toISOString(), app: 'Corn Snake Manager' }, null, 2); }
+    export() { return JSON.stringify({ ...state, exportedAt: new Date().toISOString(), app: 'SNAKEcheck' }, null, 2); }
   };
 })();
 

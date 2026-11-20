@@ -1,4 +1,4 @@
-# 🐍 Corn Snake Manager — Gestione Serpente del Grano
+# 🐍 SNAKEcheck — Gestione Serpente del Grano
 
 App web (PWA) in italiano per gestire parametri, salute e routine di un serpente del grano (*Pantherophis guttatus*): clima del terrario, pasti, crescita, mute, manutenzione e handling, con alert automatici e grafici.
 

@@ -1,6 +1,6 @@
 // Service worker: memorizza l'app per l'uso offline.
 // Cambia VERSION quando aggiorni index.html per distribuire la nuova versione.
-const VERSION = 'serpente-v1';
+const VERSION = 'snakecheck-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
 
 self.addEventListener('install', e => {

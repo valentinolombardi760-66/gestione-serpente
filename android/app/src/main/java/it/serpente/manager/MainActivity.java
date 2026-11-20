@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Contenitore Android dell'app web "Corn Snake Manager".
+ * Contenitore Android dell'app web "SNAKEcheck".
  * Carica index.html dagli asset (funziona offline, Chart.js è incluso)
  * e aggiunge ciò che una WebView non fa da sola:
  *  - salvataggio del backup JSON nella cartella Download;
