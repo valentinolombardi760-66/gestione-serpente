@@ -1,6 +1,6 @@
 // Service worker di SNAKEcheck: memorizza l'app per l'uso offline.
 // Cambia VERSION a ogni aggiornamento di index.html per distribuire la nuova versione.
-const VERSION = 'snakecheck-v3';
+const VERSION = 'snakecheck-v4';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
