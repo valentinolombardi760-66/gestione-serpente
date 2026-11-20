@@ -3,7 +3,7 @@ export default defineConfig({
   testDir: 'tests',
   timeout: 30000,
   reporter: process.env.CI ? 'github' : 'list',
-  use: { baseURL: 'http://localhost:4173/', trace: 'off' },
+  use: { baseURL: 'http://localhost:4173/', trace: 'off', reducedMotion: 'reduce' },
   webServer: { command: 'node tools/serve.mjs', port: 4173, reuseExistingServer: true },
   projects: [
     { name: 'pc', use: { viewport: { width: 1366, height: 860 } } },

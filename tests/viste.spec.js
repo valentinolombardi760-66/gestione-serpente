@@ -56,3 +56,22 @@ test('collegamento rapido ?azione=acqua registra il cambio acqua', async ({ page
   await page.goto('/index.html?azione=acqua#dashboard');
   await expect.poll(() => page.evaluate(() => Store.get().logs.maintenance.filter(m => m.tipo === 'Cambio acqua').length)).toBe(before + 1);
 });
+
+test.describe('con le animazioni attive', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  test('navigazione animata senza errori e con indicatori', async ({ page }) => {
+    const errors = await openApp(page, { demo: true });
+    for (const v of ['clima', 'alimentazione', 'cura', 'salute', 'impostazioni', 'dashboard']) {
+      await page.evaluate(v => Router.go(v), v);
+      await page.waitForTimeout(250);
+    }
+    await page.waitForTimeout(1500);
+    await checkView(page);
+    await expect(page.locator('#view-dashboard.stagger')).toHaveCount(0);
+    const ind = await page.evaluate(() => { const el = document.querySelector('.nav-ind, .bn-ind'); return el && getComputedStyle(el).opacity; });
+    expect(ind).toBe('1');
+    await page.evaluate(() => { Views.tabs.alimentazione = 'growth'; Router.go('alimentazione'); });
+    await expect(page.locator('#view-alimentazione .tabs-bar .seg-ind')).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
+});
