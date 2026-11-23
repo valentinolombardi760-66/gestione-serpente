@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t10">
+  <title id="t10">SNAKEcheck · Logo #10 · Mosaico di scaglie</title>
+  <defs>
+    <linearGradient id="g10bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffab4f"/>
+      <stop offset=".55" stop-color="#f2603a"/>
+      <stop offset="1" stop-color="#c8372d"/>
+    </linearGradient>
+  </defs>
+  <g id="sfondo"><rect width="512" height="512" fill="url(#g10bg)"/></g>
+  <g id="scaglie"><rect x="105" y="105" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="167" y="105" width="54" height="54" rx="16" fill="#fff1df"/><rect x="229" y="105" width="54" height="54" rx="16" fill="#fff1df"/><rect x="291" y="105" width="54" height="54" rx="16" fill="#fff1df"/><rect x="353" y="105" width="54" height="54" rx="16" fill="#9be15d"/><rect x="105" y="167" width="54" height="54" rx="16" fill="#fff1df"/><rect x="167" y="167" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="229" y="167" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="291" y="167" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="353" y="167" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="105" y="229" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="167" y="229" width="54" height="54" rx="16" fill="#fff1df"/><rect x="229" y="229" width="54" height="54" rx="16" fill="#fff1df"/><rect x="291" y="229" width="54" height="54" rx="16" fill="#fff1df"/><rect x="353" y="229" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="105" y="291" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="167" y="291" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="229" y="291" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="291" y="291" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/><rect x="353" y="291" width="54" height="54" rx="16" fill="#fff1df"/><rect x="105" y="353" width="54" height="54" rx="16" fill="#fff1df"/><rect x="167" y="353" width="54" height="54" rx="16" fill="#fff1df"/><rect x="229" y="353" width="54" height="54" rx="16" fill="#fff1df"/><rect x="291" y="353" width="54" height="54" rx="16" fill="#fff1df"/><rect x="353" y="353" width="54" height="54" rx="16" fill="#ffffff" fill-opacity=".16"/></g>
+  <g id="occhio">
+    <circle cx="388" cy="126" r="8" fill="#0d1f17"/>
+  </g>
+</svg>

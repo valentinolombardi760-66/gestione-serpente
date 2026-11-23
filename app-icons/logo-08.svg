@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t08">
+  <title id="t08">SNAKEcheck · Logo #08 · Pepe mascotte</title>
+  <defs>
+    <radialGradient id="g08bg" cx="50%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#e6f7cf"/>
+      <stop offset="1" stop-color="#b9e889"/>
+    </radialGradient>
+    <linearGradient id="g08pelle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffa24f"/>
+      <stop offset="1" stop-color="#f2603a"/>
+    </linearGradient>
+  </defs>
+  <g id="sfondo"><rect width="512" height="512" fill="url(#g08bg)"/>
+    <circle cx="256" cy="250" r="196" fill="#fff" opacity=".28"/>
+  </g>
+  <g id="corpo" fill="none" stroke-linecap="round">
+    <path d="M 300 300 C 320 392 400 392 452 404 C 500 416 512 470 512 520" stroke="url(#g08pelle)" stroke-width="92"/>
+    <path d="M 344 360 L 362 388 M 408 386 L 412 418" stroke="#d9372b" stroke-width="26"/>
+  </g>
+  <g id="testa">
+    <path d="M 256 112 C 352 112 402 170 402 236 C 402 304 340 340 256 340 C 172 340 110 304 110 236 C 110 170 160 112 256 112 Z" fill="url(#g08pelle)"/>
+    <path d="M 222 142 C 236 130 276 130 290 142 C 292 166 220 166 222 142 Z" fill="#d9372b" stroke="#fff1df" stroke-width="7"/>
+    <path d="M 160 176 C 168 164 190 162 198 172 C 196 188 164 192 160 176 Z" fill="#d9372b" stroke="#fff1df" stroke-width="6"/>
+    <path d="M 314 172 C 322 162 344 164 352 176 C 348 192 316 188 314 172 Z" fill="#d9372b" stroke="#fff1df" stroke-width="6"/>
+    <circle cx="182" cy="238" r="38" fill="#b3192e"/>
+    <circle cx="330" cy="238" r="38" fill="#b3192e"/>
+    <circle cx="194" cy="224" r="13" fill="#fff"/>
+    <circle cx="342" cy="224" r="13" fill="#fff"/>
+    <circle cx="172" cy="252" r="5" fill="#fff" opacity=".7"/>
+    <circle cx="320" cy="252" r="5" fill="#fff" opacity=".7"/>
+    <ellipse cx="150" cy="292" rx="22" ry="12" fill="#ff6f61" opacity=".45"/>
+    <ellipse cx="362" cy="292" rx="22" ry="12" fill="#ff6f61" opacity=".45"/>
+    <circle cx="238" cy="282" r="5" fill="#8a2a14"/>
+    <circle cx="274" cy="282" r="5" fill="#8a2a14"/>
+    <path d="M 222 306 Q 256 326 290 306" fill="none" stroke="#8a2a14" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g id="lingua" fill="none" stroke="#e0244a" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 256 320 L 256 366 M 256 366 L 242 384 M 256 366 L 270 384"/>
+  </g>
+</svg>
