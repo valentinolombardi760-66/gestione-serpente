@@ -37,6 +37,18 @@
       ]
     },
     {
+      "name": "Giro di controllo",
+      "short_name": "Giro",
+      "description": "Clima, acqua, pulizia e peso in un pannello",
+      "url": "./index.html?azione=giro#dashboard",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Nuova lettura clima",
       "short_name": "Clima",
       "description": "Temperatura e umidità",
@@ -53,18 +65,6 @@
       "short_name": "Acqua",
       "description": "Segna il cambio dell'acqua",
       "url": "./index.html?azione=acqua#dashboard",
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Cerca",
-      "short_name": "Cerca",
-      "description": "Cerca nel registro",
-      "url": "./index.html?azione=cerca#dashboard",
       "icons": [
         {
           "src": "icons/icon-192.png",
