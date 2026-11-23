@@ -1278,6 +1278,11 @@ h1 { font-weight: 800; letter-spacing: -.03em; }
 :root:not([data-theme="light"]) body.scrolled .topbar { background: rgba(13, 31, 23, .86); }
 @media (max-width: 960px) { :root:not([data-theme="light"]) .bottom-nav { background: rgba(22, 48, 42, .9); box-shadow: 0 20px 50px -18px rgba(0, 0, 0, .8); } }
 .story-ev.big .story-dot { color: #0d1f17; }
+/* ==========================================================================
+   13. STEP 1 — conferma prima di scartare un form
+   ========================================================================== */
+.discard-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: color-mix(in srgb, var(--warn) 14%, var(--card)); font-weight: 600; font-size: .9rem; animation: rise .25s var(--ease) both; }
+.discard-bar .row { gap: 8px; margin-left: auto; }
 </style>
 </head>
 <body>
@@ -1787,7 +1792,14 @@ const Store = (() => {
   let state = emptyState();
   let rev = 0;
   const listeners = new Set();
-  const history = [];   // stati precedenti per "Annulla"
+  /**
+   * Cronologia per "Annulla": ogni voce ha un token, così ogni notifica annulla
+   * proprio la sua azione. Le azioni singole salvano solo la voce toccata;
+   * le operazioni di massa (import, sincronizzazione, svuota) una copia completa.
+   */
+  const history = [];
+  let lastToken = null;
+  let unsaved = false;   // true se l'ultimo salvataggio nel browser non è riuscito
 
   function applyAliases(obj, map) {
     const out = { ...obj };
@@ -1945,13 +1957,38 @@ const Store = (() => {
   function persist() {
     state.version = SCHEMA_VERSION;
     state.updatedAt = new Date().toISOString();
-    try { localStorage.setItem(KEY, JSON.stringify(state)); Safety.requestPersist(); return true; }
-    catch (err) { console.warn('Salvataggio non riuscito', err); Toast.show('Impossibile salvare: spazio del browser esaurito o bloccato.', 'bad'); return false; }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+      if (unsaved) { unsaved = false; Toast.show('Dati salvati di nuovo nel browser', 'ok'); }
+      Safety.requestPersist();
+      return true;
+    } catch (err) {
+      console.warn('Salvataggio non riuscito', err);
+      const first = !unsaved;
+      unsaved = true;
+      if (first) {
+        const quota = err && (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014);
+        Toast.show(quota
+          ? 'Spazio del browser esaurito: l\'ultima modifica non è salvata. Libera spazio compattando le letture vecchie.'
+          : 'Impossibile salvare nel browser: l\'ultima modifica non è salvata. Esporta un backup.', 'bad',
+        { duration: 20000, action: quota ? { label: 'Libera spazio', run: () => Actions.compactEnv() } : { label: 'Esporta', run: () => Actions.exportBackup() } });
+      }
+      return false;
+    }
   }
   const emit = () => { rev++; listeners.forEach(fn => fn(state)); };
   const commit = () => { persist(); emit(); };
-  /** Salva lo stato corrente nella cronologia prima di una modifica */
-  const remember = label => { history.push({ label, json: JSON.stringify(state) }); if (history.length > 20) history.shift(); };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  /** Registra un'azione annullabile e ne restituisce il token */
+  const record = (label, undo) => {
+    const token = Utils.uid();
+    history.push({ token, label, ...undo });
+    if (history.length > 30) history.shift();
+    lastToken = token;
+    return token;
+  };
+  /** Copia completa per le operazioni di massa */
+  const remember = label => record(label, { op: 'snap', json: JSON.stringify(state) });
 
   /** Chiave di contenuto per riconoscere doppioni (senza id) */
   const signature = (t, e) => JSON.stringify(Schema.LOGS[t].fields.map(f => e[f.name] ?? ''));
@@ -1960,6 +1997,8 @@ const Store = (() => {
   window.addEventListener('storage', e => {
     if (e.key !== KEY) return;
     load();
+    history.length = 0;   // un "Annulla" ora riporterebbe indietro i dati dell'altra finestra
+    lastToken = null;
     emit();
     Toast.show('Dati aggiornati da un\'altra finestra dell\'app', 'info');
   });
@@ -2010,34 +2049,55 @@ const Store = (() => {
       commit();
       return added;
     },
-    reset() { remember('Svuota dati'); state = emptyState(); try { localStorage.removeItem(KEY); } catch (e) { console.warn(e); } emit(); },
-    updateProfile(patch) { remember('Modifica profilo'); Object.assign(state.profile, patch); state.profileAt = nowISO(); commit(); },
+    /**
+     * Svuota i dati. Le voci eliminate restano annotate (e il profilo vuoto è "più recente"),
+     * così la sincronizzazione non le riporta indietro.
+     */
+    reset() {
+      remember('Svuota dati');
+      const at = nowISO();
+      const deleted = { ...state.deleted };
+      for (const t of Schema.LOG_TYPES) state.logs[t].forEach(e => { deleted[e.id] = at; });
+      state = emptyState();
+      state.deleted = deleted;
+      state.profileAt = at;
+      commit();
+    },
+    updateProfile(patch) {
+      const prev = clone(state.profile), prevAt = state.profileAt;
+      record('Modifica profilo', { op: 'profile', prev, prevAt });
+      Object.assign(state.profile, patch);
+      state.profileAt = nowISO();
+      commit();
+    },
     add(type, data) {
       const e = normalizeEntry(type, { ...data, id: Utils.uid(), _m: nowISO() });
       if (!e) return null;
-      remember('Nuova voce');
+      record('Nuova voce', { op: 'add', items: [{ type, id: e.id }] });
       state.logs[type].push(e);
       sortLog(type, state.logs[type]);
       if (type === 'growth') syncProfileFromGrowth();
       commit();
       return e;
     },
-    /** Aggiunge più voci in un solo salvataggio (es. import CSV) */
+    /** Aggiunge più voci (anche di registri diversi) con un solo salvataggio e un solo "Annulla" */
     addMany(type, list) {
       const ok = list.map(d => normalizeEntry(type, { ...d, id: Utils.uid(), _m: nowISO() })).filter(Boolean);
       if (!ok.length) return 0;
-      remember('Import letture');
+      record('Import letture', { op: 'add', items: ok.map(e => ({ type, id: e.id })) });
       state.logs[type].push(...ok);
       sortLog(type, state.logs[type]);
+      if (type === 'growth') syncProfileFromGrowth();
       commit();
       return ok.length;
     },
     update(type, id, data) {
       const i = state.logs[type].findIndex(e => e.id === id);
       if (i < 0) return null;
-      const e = normalizeEntry(type, { ...state.logs[type][i], ...data, id, _m: nowISO() });
+      const prev = state.logs[type][i];
+      const e = normalizeEntry(type, { ...prev, ...data, id, _m: nowISO() });
       if (!e) return null;
-      remember('Modifica');
+      record('Modifica', { op: 'update', type, prev: clone(prev), m: e._m });
       state.logs[type][i] = e;
       sortLog(type, state.logs[type]);
       if (type === 'growth') syncProfileFromGrowth();
@@ -2047,30 +2107,80 @@ const Store = (() => {
     remove(type, id) {
       const e = state.logs[type].find(x => x.id === id);
       if (!e) return null;
-      remember('Eliminazione');
+      record('Eliminazione', { op: 'remove', type, prev: clone(e) });
       state.logs[type] = state.logs[type].filter(x => x.id !== id);
       state.deleted[id] = nowISO();
       if (type === 'growth') syncProfileFromGrowth();
       commit();
       return e;
     },
-    restore(type, entry) {
-      if (state.logs[type].some(x => x.id === entry.id)) return;
-      delete state.deleted[entry.id];
-      state.logs[type].push({ ...entry, _m: nowISO() });
-      sortLog(type, state.logs[type]);
-      if (type === 'growth') syncProfileFromGrowth();
+    /**
+     * Annulla l'azione indicata dal token (o l'ultima se manca).
+     * Ritorna { ok, label, reason }: reason spiega perché non si può annullare.
+     */
+    undo(token = null) {
+      const i = token ? history.findIndex(h => h.token === token) : history.length - 1;
+      const h = history[i];
+      if (!h) return { ok: false, reason: 'gone' };
+      // Una copia completa riporterebbe indietro anche quello che è successo dopo: solo se è l'ultima azione
+      if (h.op === 'snap' && i !== history.length - 1) return { ok: false, reason: 'later' };
+      if (h.op === 'update') {
+        const cur = state.logs[h.type].find(x => x.id === h.prev.id);
+        if (cur && cur._m !== h.m) return { ok: false, reason: 'later' };
+      }
+      history.splice(i, 1);
+      const now = nowISO();
+      if (h.op === 'snap') state = normalizeState(JSON.parse(h.json));
+      else if (h.op === 'profile') { state.profile = h.prev; state.profileAt = now; }
+      else if (h.op === 'add') {
+        h.items.forEach(({ type, id }) => {
+          if (!state.logs[type].some(x => x.id === id)) return;
+          state.logs[type] = state.logs[type].filter(x => x.id !== id);
+          state.deleted[id] = now;
+        });
+      } else if (h.op === 'update') {
+        const k = state.logs[h.type].findIndex(x => x.id === h.prev.id);
+        const back = { ...h.prev, _m: now };
+        if (k >= 0) state.logs[h.type][k] = back; else { state.logs[h.type].push(back); delete state.deleted[back.id]; }
+        sortLog(h.type, state.logs[h.type]);
+      } else if (h.op === 'remove') {
+        if (!state.logs[h.type].some(x => x.id === h.prev.id)) {
+          delete state.deleted[h.prev.id];
+          state.logs[h.type].push({ ...h.prev, _m: now });
+          sortLog(h.type, state.logs[h.type]);
+        }
+      }
+      if (lastToken === h.token) lastToken = null;
+      syncProfileFromGrowth();
       commit();
+      return { ok: true, label: h.label };
     },
-    /** Torna allo stato precedente all'ultima modifica */
-    undo() {
-      const h = history.pop();
-      if (!h) return null;
-      state = normalizeState(JSON.parse(h.json));
+    canUndo: token => token ? history.some(h => h.token === token) : history.length > 0,
+    /** Token dell'ultima azione registrata, da legare alla notifica con "Annulla" */
+    get lastToken() { return lastToken; },
+    get unsaved() { return unsaved; },
+    /**
+     * Riduce le letture ambientali più vecchie di "days" giorni a una ogni 6 ore,
+     * per liberare spazio nel browser. Ritorna il numero di letture tolte.
+     */
+    compactEnv(days = 90) {
+      const cut = Utils.toLocalDT(new Date(Date.now() - days * 864e5));
+      const seen = new Set();
+      const keep = [], drop = [];
+      // dalla più vecchia alla più recente: si tiene la prima lettura di ogni fascia di 6 ore
+      [...state.logs.env].reverse().forEach(e => {
+        if (e.datetime >= cut) { keep.push(e); return; }
+        const slot = `${e.datetime.slice(0, 10)}-${Math.floor(+e.datetime.slice(11, 13) / 6)}`;
+        if (seen.has(slot)) drop.push(e); else { seen.add(slot); keep.push(e); }
+      });
+      if (!drop.length) return 0;
+      remember('Compattazione letture');
+      const at = nowISO();
+      drop.forEach(e => { state.deleted[e.id] = at; });
+      state.logs.env = sortLog('env', keep);
       commit();
-      return h.label;
+      return drop.length;
     },
-    canUndo: () => history.length > 0,
     /**
      * Unione per la sincronizzazione tra dispositivi: per ogni voce vince la modifica più recente,
      * le eliminazioni si propagano. Ritorna { added, changed, removed } rispetto ai dati locali.
@@ -2094,7 +2204,7 @@ const Store = (() => {
       state.deleted = del;
       if ((r.profileAt || '') > (state.profileAt || '')) { state.profile = r.profile; state.profileAt = r.profileAt; stats.changed++; }
       syncProfileFromGrowth();
-      if (JSON.stringify(state) !== before) { remember('Sincronizzazione'); history[history.length - 1].json = before; commit(); }
+      if (JSON.stringify(state) !== before) { record('Sincronizzazione', { op: 'snap', json: before }); commit(); }
       return stats;
     },
     exportJSON(extra = {}) { return JSON.stringify({ ...state, app: 'SNAKEcheck', exportedAt: new Date().toISOString(), ...extra }, null, 2); },
@@ -2207,6 +2317,97 @@ const Safety = (() => {
   const markBackup = () => Store.meta({ lastBackupAt: new Date().toISOString() });
 
   return { requestPersist, status, snapshot, list, get, weekly, backupAge, markBackup, isPersisted: () => persisted };
+})();
+
+/* ==========================================================================
+   Dom — aggiornamento mirato del DOM: si confronta il nuovo HTML con quello
+   presente e si cambia solo ciò che è diverso. Così terrario, grafici, righe
+   delle tabelle e campi in modifica non vengono ricreati a ogni salvataggio.
+   Chiavi: id, data-key, data-photo, oppure data-edit + data-id.
+   data-keep: l'elemento tiene i suoi figli (es. il grafico, riempito a parte).
+   ========================================================================== */
+const Dom = (() => {
+  const tpl = document.createElement('template');
+  function keyOf(n) {
+    if (n.nodeType !== 1) return null;
+    const g = a => n.getAttribute(a);
+    if (n.id) return '#' + n.id;
+    if (g('data-key')) return 'k:' + g('data-key');
+    if (g('data-photo')) return 'p:' + g('data-photo');
+    if (g('data-id') && g('data-edit')) return 'e:' + g('data-edit') + ':' + g('data-id');
+    return null;
+  }
+  const same = (a, b) => a.nodeType === b.nodeType && a.nodeName === b.nodeName;
+  const isField = n => n.nodeName === 'INPUT' || n.nodeName === 'SELECT';
+
+  function syncAttrs(from, to) {
+    for (const a of [...from.attributes]) {
+      if (!to.hasAttributeNS(a.namespaceURI, a.localName)) from.removeAttributeNS(a.namespaceURI, a.localName);
+    }
+    for (const a of to.attributes) {
+      if (from.getAttributeNS(a.namespaceURI, a.localName) !== a.value) {
+        if (a.namespaceURI) from.setAttributeNS(a.namespaceURI, a.name, a.value); else from.setAttribute(a.name, a.value);
+      }
+    }
+  }
+
+  function update(from, to) {
+    if (from.nodeType !== 1) { if (from.nodeValue !== to.nodeValue) from.nodeValue = to.nodeValue; return; }
+    if (from.isEqualNode(to)) return;   // confronto nativo: nulla da cambiare in tutto il ramo
+    const focused = from === document.activeElement;
+    if (isField(from)) {
+      // Il valore digitato resta finché i dati salvati non cambiano davvero
+      const vOld = from.getAttribute('value'), vNew = to.getAttribute('value');
+      const cOld = from.hasAttribute('checked'), cNew = to.hasAttribute('checked');
+      syncAttrs(from, to);
+      if (vOld !== vNew && !focused && from.type !== 'file') from.value = vNew ?? '';
+      if (cOld !== cNew) from.checked = cNew;
+      if (from.nodeName === 'SELECT') children(from, to);
+      return;
+    }
+    if (from.nodeName === 'TEXTAREA') {
+      const dOld = from.defaultValue, dNew = to.defaultValue;
+      syncAttrs(from, to);
+      if (dOld !== dNew) { const v = from.value; from.defaultValue = dNew; from.value = focused ? v : dNew; }
+      return;
+    }
+    syncAttrs(from, to);
+    if (from.hasAttribute('data-keep')) return;
+    children(from, to);
+  }
+
+  function children(oldParent, newParent) {
+    const keyed = new Map();
+    for (const n of oldParent.childNodes) { const k = keyOf(n); if (k && !keyed.has(k)) keyed.set(k, n); }
+    let cur = oldParent.firstChild;
+    const skipInjected = () => { while (cur && cur.nodeType === 1 && cur.hasAttribute('data-injected')) cur = cur.nextSibling; };
+    for (const nn of [...newParent.childNodes]) {
+      skipInjected();
+      const k = keyOf(nn);
+      let match = null;
+      if (k) { const c = keyed.get(k); if (c && same(c, nn)) { match = c; keyed.delete(k); } }
+      else if (cur && !keyOf(cur) && same(cur, nn)) match = cur;
+      if (match) {
+        if (match === cur) cur = cur.nextSibling; else oldParent.insertBefore(match, cur);
+        update(match, nn);
+      } else oldParent.insertBefore(nn, cur);
+    }
+    while (cur) {
+      const next = cur.nextSibling;
+      if (!(cur.nodeType === 1 && cur.hasAttribute('data-injected'))) cur.remove();
+      cur = next;
+    }
+  }
+
+  /** Porta il contenuto di el a corrispondere a html, toccando solo le differenze */
+  function morph(el, html) {
+    if (!el) return;
+    if (!el.firstChild) { el.innerHTML = html; return; }
+    tpl.innerHTML = html;
+    children(el, tpl.content);
+    tpl.innerHTML = '';
+  }
+  return { morph };
 })();
 
 /* ==========================================================================
@@ -2692,7 +2893,7 @@ const Toast = (() => {
 const Overlay = (() => {
   let current = null, lastFocus = null;
 
-  function open({ title, subtitle = '', body, footer = '', size = '', onClose = null }) {
+  function open({ title, subtitle = '', body, footer = '', size = '', onClose = null, guard = null }) {
     close(true);
     lastFocus = document.activeElement;
     const host = document.getElementById('overlayHost');
@@ -2706,16 +2907,41 @@ const Overlay = (() => {
         ${footer ? `<div class="modal-foot">${footer}</div>` : ''}
       </div>`;
     host.appendChild(wrap);
-    current = { el: wrap, onClose };
+    current = { el: wrap, onClose, guard };
     enableDrag(wrap.querySelector('.modal'));
-    wrap.addEventListener('mousedown', e => { if (e.target === wrap) close(); });
-    wrap.querySelector('[data-close]').addEventListener('click', () => close());
+    wrap.addEventListener('mousedown', e => { if (e.target === wrap) request(); });
+    wrap.querySelector('[data-close]').addEventListener('click', () => request());
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => {
       const f = wrap.querySelector('.modal-body input:not([type=radio]):not([type=hidden]), .modal-body textarea, .modal-body button, .modal-foot .btn-primary');
       if (f && window.matchMedia('(min-width: 641px)').matches) f.focus({ preventScroll: true });
     });
     return wrap.querySelector('.modal');
+  }
+
+  /**
+   * Chiusura chiesta dall'utente (sfondo, X, Esc, trascinamento, Annulla).
+   * Se il pannello ha modifiche non salvate chiede prima se scartarle.
+   */
+  function request() {
+    if (!current) return false;
+    const c = current;
+    if (c.guard && !c.asking && c.guard()) {
+      c.asking = true;
+      const modal = c.el.querySelector('.modal');
+      const bar = document.createElement('div');
+      bar.className = 'discard-bar';
+      bar.setAttribute('role', 'alertdialog');
+      bar.innerHTML = `<span>Hai inserito dei dati. Vuoi scartarli?</span><div class="row"><button class="btn btn-sm btn-ghost" data-keep-edit>Continua</button><button class="btn btn-sm btn-danger" data-discard>Scarta</button></div>`;
+      modal.appendChild(bar);
+      const stay = () => { c.asking = false; bar.remove(); };
+      bar.querySelector('[data-keep-edit]').addEventListener('click', stay);
+      bar.querySelector('[data-discard]').addEventListener('click', () => close());
+      bar.querySelector('[data-keep-edit]').focus({ preventScroll: true });
+      return false;
+    }
+    close();
+    return true;
   }
 
   function close(immediate = false) {
@@ -2744,7 +2970,8 @@ const Overlay = (() => {
       y0 = null;
       try { modal.releasePointerCapture(pid); } catch (err) { /* ignorato */ }
       modal.style.transition = '';
-      if (dy > 110) close(); else modal.style.transform = '';
+      if (dy > 110 && request()) return;
+      modal.style.transform = '';
     };
     modal.querySelectorAll('.grabber, .modal-head').forEach(el => el.addEventListener('pointerdown', start));
     modal.addEventListener('pointermove', move);
@@ -2774,8 +3001,12 @@ const Overlay = (() => {
     });
   }
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && current) close(); });
-  return { open, close, confirm, isOpen: () => !!current };
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !current) return;
+    if (current.asking) { const k = current.el.querySelector('[data-keep-edit]'); if (k) k.click(); return; }
+    request();
+  });
+  return { open, close, request, confirm, isOpen: () => !!current };
 })();
 
 /* ==========================================================================
@@ -2852,9 +3083,12 @@ const Forms = (() => {
     const footer = `${id ? `<button class="btn btn-danger" data-form-delete style="margin-right:auto">Elimina</button>` : ''}
       <button class="btn btn-ghost" data-close-form>Annulla</button>
       <button class="btn btn-primary" data-submit-form>${id ? 'Salva modifiche' : `Registra ${def.label.toLowerCase()}`}</button>`;
-    const modal = Overlay.open({ title: `${I(def.icon)} ${id ? 'Modifica' : (def.g === 'm' ? 'Nuovo' : 'Nuova')} ${def.label.toLowerCase()}`, subtitle: def.desc, body, footer });
+    let initial = null;
+    const modal = Overlay.open({ title: `${I(def.icon)} ${id ? 'Modifica' : (def.g === 'm' ? 'Nuovo' : 'Nuova')} ${def.label.toLowerCase()}`, subtitle: def.desc, body, footer,
+      guard: () => initial !== null && snapshot(form) !== initial });
     const form = modal.querySelector('#logForm');
-    modal.querySelector('[data-close-form]').addEventListener('click', () => Overlay.close());
+    initial = snapshot(form);
+    modal.querySelector('[data-close-form]').addEventListener('click', () => Overlay.request());
     modal.querySelector('[data-submit-form]').addEventListener('click', () => submit(form));
     form.addEventListener('submit', e => { e.preventDefault(); submit(form); });
     form.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit(form); });
@@ -2872,8 +3106,14 @@ const Forms = (() => {
     live(form);
   }
 
+  /** Contenuto del form come testo, per capire se è stato modificato */
+  const snapshot = form => JSON.stringify([...new FormData(form).entries()]);
+
   /** Comportamento dei campi data: maschera gg/mm/aaaa, calendario, Oggi/Adesso, svuota */
+  const boundDates = new WeakSet();
   function bindDates(root, onChange = () => {}) {
+    if (!root || boundDates.has(root)) return;   // la vista si aggiorna senza ricreare il form
+    boundDates.add(root);
     root.addEventListener('input', e => {
       const t = e.target;
       if (t.matches('[data-date]') && e.inputType && !e.inputType.startsWith('delete')) {
@@ -3029,13 +3269,34 @@ const Charts = (() => {
   const available = () => typeof window.Chart !== 'undefined' && !window.__chartLoadFailed;
   let themed = false;
 
+  // I colori di assi e testi li imposta Theme.apply; qui solo carattere e dimensione
   function theme() {
     if (themed || !available()) return;
-    Chart.defaults.color = Theme.isLight() ? '#64748b' : '#6b7584';
-    Chart.defaults.borderColor = Theme.isLight() ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.06)';
     Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
     Chart.defaults.font.size = 11;
     themed = true;
+  }
+  /** Colori presi dai token del tema attivo, così grafici e tema restano coerenti */
+  const tok = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const palette = () => ({ text: tok('--text'), muted: tok('--muted'), border: tok('--border-strong'), bg: tok('--elev-2'), grid: tok('--border') });
+
+  /** Con molti punti (es. letture orarie da CSV) si fa la media per gruppi: massimo MAX_POINTS punti */
+  const MAX_POINTS = 240;
+  function decimate(labels, series) {
+    const n = labels.length;
+    if (n <= MAX_POINTS) return { labels, series };
+    const size = Math.ceil(n / MAX_POINTS);
+    const outL = [];
+    const outS = series.map(s => ({ ...s, data: [] }));
+    for (let i = 0; i < n; i += size) {
+      outL.push(labels[i]);
+      series.forEach((s, k) => {
+        let sum = 0, c = 0;
+        for (let j = i; j < Math.min(n, i + size); j++) { const v = s.data[j]; if (v !== null && v !== undefined) { sum += v; c++; } }
+        outS[k].data.push(c ? Math.round(sum / c * 10) / 10 : null);
+      });
+    }
+    return { labels: outL, series: outS };
   }
   const destroy = key => { if (instances[key]) { try { instances[key].destroy(); } catch (e) { console.warn(e); } delete instances[key]; } };
   const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
@@ -3043,18 +3304,51 @@ const Charts = (() => {
   const emptyHTML = (msg, type) => `<div class="empty" style="height:100%"><div class="empty-ico">${I('chart')}</div><b>Nessun dato nel periodo</b><p>${msg}</p>${type ? `<button class="btn btn-sm" data-add="${type}">＋ Registra</button>` : ''}</div>`;
 
   /** series: [{ label, data, color, axis: 'y'|'y1', unit, fill }] */
+  /** Imposta i dataset (anche per l'aggiornamento sul posto) */
+  const dataset = (s, n) => ({
+    label: s.label, data: s.data, unit: s.unit, yAxisID: s.axis || 'y',
+    borderColor: s.color, borderWidth: s.dash ? 1.5 : 2, tension: .35, spanGaps: true, borderDash: s.dash ? [5, 5] : [],
+    pointRadius: s.dash || n > 30 ? 0 : 2.5, pointHoverRadius: s.dash ? 0 : 5, pointBackgroundColor: s.color, pointBorderWidth: 0,
+    fill: s.fill === false ? false : 'origin',
+    backgroundColor: ctx => {
+      const { chart } = ctx; const { chartArea } = chart;
+      if (!chartArea) return 'transparent';
+      const g = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+      g.addColorStop(0, hexA(s.color, s.fillAlpha ?? .22)); g.addColorStop(1, hexA(s.color, 0));
+      return g;
+    }
+  });
+
   function line(key, box, labels, series, { yTitle = '', y1Title = '', emptyMsg = '', addType = null, band = null } = {}) {
-    destroy(key);
-    if (!box) return;
+    if (!box) { destroy(key); return; }
     const has = labels.length > 0 && series.some(s => s.data.some(v => v !== null));
-    if (!has) { box.innerHTML = emptyHTML(emptyMsg, addType); return; }
-    if (!available()) { svgFallback(box, labels, series); return; }
+    if (!has) { destroy(key); box.innerHTML = emptyHTML(emptyMsg, addType); return; }
+    ({ labels, series } = decimate(labels, series));
+    if (!available()) { destroy(key); svgFallback(box, labels, series); return; }
     theme();
+    const look = `${Theme.isLight()}|${tok('--accent')}|${series.map(s => s.label + s.axis).join(',')}`;
+    const cur = instances[key];
+    // Stesso grafico ancora a schermo: si aggiornano i dati e le linee scorrono ai nuovi valori
+    if (cur && cur.$look === look && box.contains(cur.canvas)) {
+      const sig = JSON.stringify([labels, series.map(s => s.data), band]);
+      if (sig === cur.$sig) return;   // dati uguali (es. si è registrata l'acqua): niente da ridisegnare
+      cur.$sig = sig;
+      cur.data.labels = labels;
+      series.forEach((s, i) => { cur.data.datasets[i] = Object.assign(cur.data.datasets[i] || {}, dataset(s, labels.length)); });
+      cur.$band = band;
+      cur.update(Utils.reducedMotion() ? 'none' : undefined);
+      return;
+    }
+    destroy(key);
+    const pal = palette();
     box.innerHTML = '<canvas aria-label="Grafico" role="img"></canvas>';
     const usesY1 = series.some(s => s.axis === 'y1');
+    const band0 = band;
     const bandPlugin = band ? {
       id: 'band',
       beforeDatasetsDraw(chart) {
+        const band = chart.$band === undefined ? band0 : chart.$band;
+        if (!band) return;
         const { ctx, chartArea, scales } = chart;
         const y = scales[band.axis || 'y'];
         if (!y || !chartArea) return;
@@ -3070,41 +3364,30 @@ const Charts = (() => {
         type: 'line',
         data: {
           labels,
-          datasets: series.map(s => ({
-            label: s.label, data: s.data, yAxisID: s.axis || 'y',
-            borderColor: s.color, borderWidth: s.dash ? 1.5 : 2, tension: .35, spanGaps: true, borderDash: s.dash ? [5, 5] : [],
-            pointRadius: s.dash || labels.length > 30 ? 0 : 2.5, pointHoverRadius: s.dash ? 0 : 5, pointBackgroundColor: s.color, pointBorderWidth: 0,
-            fill: s.fill === false ? false : 'origin',
-            backgroundColor: ctx => {
-              const { chart } = ctx; const { chartArea } = chart;
-              if (!chartArea) return 'transparent';
-              const g = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-              g.addColorStop(0, hexA(s.color, s.fillAlpha ?? .22)); g.addColorStop(1, hexA(s.color, 0));
-              return g;
-            }
-          }))
+          datasets: series.map(s => dataset(s, labels.length))
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           animation: { duration: Utils.reducedMotion() ? 0 : 900, easing: 'easeOutQuart' },
-          animations: Utils.reducedMotion() ? {} : { y: { from: c => (c.type === 'data' && c.mode === 'default' && c.chart.chartArea ? c.chart.chartArea.bottom : undefined), delay: c => (c.type === 'data' && c.mode === 'default' ? c.dataIndex * 6 + c.datasetIndex * 90 : 0) } },
+          animations: Utils.reducedMotion() ? {} : { y: { from: c => (c.type === 'data' && c.mode === 'default' && !c.chart.$ready && c.chart.chartArea ? c.chart.chartArea.bottom : undefined), delay: c => (c.type === 'data' && c.mode === 'default' && !c.chart.$ready ? c.dataIndex * 6 + c.datasetIndex * 90 : 0) } },
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, padding: 14, color: '#9aa4b2' } },
+            legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, padding: 14, color: pal.muted } },
             tooltip: {
-              backgroundColor: 'rgba(23,26,33,0.96)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
-              titleColor: '#f1f5f9', bodyColor: '#cbd5e1', padding: 12, cornerRadius: 10, boxPadding: 4, usePointStyle: true,
-              callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y === null ? '—' : Utils.fmtNum(c.parsed.y, series[c.datasetIndex].unit)}` }
+              backgroundColor: pal.bg, borderColor: pal.border, borderWidth: 1,
+              titleColor: pal.text, bodyColor: pal.text, padding: 12, cornerRadius: 10, boxPadding: 4, usePointStyle: true,
+              callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y === null ? '—' : Utils.fmtNum(c.parsed.y, c.dataset.unit)}` }
             }
           },
           scales: {
             x: { grid: { display: false }, border: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
-            y: { position: 'left', grid: { color: Theme.isLight() ? 'rgba(15,23,42,0.07)' : 'rgba(255,255,255,0.05)' }, border: { display: false }, title: { display: !!yTitle, text: yTitle }, ticks: { maxTicksLimit: 6 } },
+            y: { position: 'left', grid: { color: pal.grid }, border: { display: false }, title: { display: !!yTitle, text: yTitle }, ticks: { maxTicksLimit: 6 } },
             ...(usesY1 ? { y1: { position: 'right', grid: { drawOnChartArea: false }, border: { display: false }, title: { display: !!y1Title, text: y1Title }, ticks: { maxTicksLimit: 6 } } } : {})
           }
         },
         plugins: bandPlugin ? [bandPlugin] : []
       });
+      Object.assign(instances[key], { $look: look, $band: band, $ready: true, $sig: JSON.stringify([labels, series.map(s => s.data), band]) });
     } catch (err) {
       console.warn('Chart.js non disponibile, uso il grafico SVG', err);
       svgFallback(box, labels, series);
@@ -3135,7 +3418,7 @@ const Charts = (() => {
       return `<defs><linearGradient id="sg${si}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".25"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient></defs>
         <path d="${area}" fill="url(#sg${si})"/><path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     }).join('');
-    const grid = [0, 1, 2, 3].map(i => { const yy = P + i * (H - 2 * P) / 3; return `<line x1="${P}" x2="${W - P}" y1="${yy}" y2="${yy}" stroke="rgba(255,255,255,.06)"/>`; }).join('');
+    const grid = [0, 1, 2, 3].map(i => { const yy = P + i * (H - 2 * P) / 3; return `<line x1="${P}" x2="${W - P}" y1="${yy}" y2="${yy}" style="stroke:var(--border)"/>`; }).join('');
     const legend = series.map(s => {
       const vals = s.data.filter(v => v !== null);
       return `<span><i style="background:${s.color}"></i>${Utils.esc(s.label)} ${vals.length ? `${Utils.fmtNum(Math.min(...vals))}–${Utils.fmtNum(Math.max(...vals), s.unit)}` : '—'}</span>`;
@@ -3258,7 +3541,7 @@ const Records = (() => {
     const list = all.filter(e => {
       if (st.f && cfg.filter && e[cfg.filter.field] !== st.f) return false;
       if (!q) return true;
-      return Object.entries(e).some(([k, v]) => k !== 'id' && v !== null && v !== '' && String(v).toLowerCase().includes(q))
+      return Object.entries(e).some(([k, v]) => k !== 'id' && k[0] !== '_' && v !== null && v !== '' && String(v).toLowerCase().includes(q))
         || Utils.fmtDate(e[def.dateKey]).toLowerCase().includes(q);
     });
     if (!list.length) {
@@ -3268,7 +3551,7 @@ const Records = (() => {
     const shown = list.slice(0, limit);
     return `<div class="rtable-wrap"><div class="rtable-scroll"><table class="rtable">
         <thead><tr>${cfg.cols.map(c => `<th>${c[0]}</th>`).join('')}<th><span class="sr-only">Azioni</span></th></tr></thead>
-        <tbody>${shown.map(e => `<tr>${cfg.cols.map((c, i) => {
+        <tbody>${shown.map(e => `<tr data-key="${Utils.esc(e.id)}">${cfg.cols.map((c, i) => {
           const html = c[1](e);
           const cls = [i === 0 ? 'cell-primary' : '', c[2] || '', c[2] === 'cell-notes' && !e.note ? 'is-empty' : ''].filter(Boolean).join(' ');
           return `<td data-label="${c[0]}"${cls ? ` class="${cls}"` : ''}>${html || (c[2] === 'cell-notes' ? '<span class="faint">—</span>' : '')}</td>`;
@@ -3279,11 +3562,17 @@ const Records = (() => {
       <div class="list-foot"><span>${list.length === all.length ? Utils.plural(all.length, 'voce', 'voci') : `${list.length} di ${all.length} voci`}</span><span class="desktop-only">Doppio clic su una riga per modificarla</span></div>`;
   }
 
-  function refresh(type) { const host = document.querySelector(`[data-rows="${type}"]`); if (host) host.innerHTML = rows(type); }
+  function refresh(type) { const host = document.querySelector(`[data-rows="${type}"]`); if (host) Dom.morph(host, rows(type)); }
 
+  // Ricerca: lo stato si aggiorna subito, la tabella dopo una breve pausa nella digitazione
+  const timers = {};
   document.addEventListener('input', e => {
     const s = e.target.closest('[data-search]');
-    if (s) { const u = (ui[s.dataset.search] || (ui[s.dataset.search] = { q: '', f: '' })); u.q = s.value; u.limit = 100; refresh(s.dataset.search); }
+    if (!s) return;
+    const t = s.dataset.search;
+    const u = (ui[t] || (ui[t] = { q: '', f: '' })); u.q = s.value; u.limit = 100;
+    clearTimeout(timers[t]);
+    timers[t] = setTimeout(() => refresh(t), s.value ? 120 : 0);
   });
   document.addEventListener('click', e => {
     const f = e.target.closest('[data-filter]');
@@ -3295,7 +3584,14 @@ const Records = (() => {
     const more = e.target.closest('[data-more]');
     if (more) { const t = more.dataset.more; ui[t].limit = (ui[t].limit || 100) + 100; refresh(t); return; }
     const r = e.target.closest('[data-reset-filters]');
-    if (r) { const t = r.dataset.resetFilters; ui[t] = { q: '', f: '' }; Router.render(); }
+    if (r) {
+      const t = r.dataset.resetFilters;
+      ui[t] = { q: '', f: '' };
+      clearTimeout(timers[t]);
+      document.querySelectorAll(`[data-search="${t}"]`).forEach(i => { i.value = ''; });
+      document.querySelectorAll(`[data-filter="${t}"]`).forEach(c => c.classList.toggle('on', c.dataset.value === ''));
+      refresh(t);
+    }
   });
   document.addEventListener('dblclick', e => {
     const tr = e.target.closest('.rtable tbody tr');
@@ -3310,25 +3606,44 @@ const Records = (() => {
    Actions — azioni condivise (elimina con annulla, cambio acqua rapido, backup)
    ========================================================================== */
 const Actions = (() => {
-  const undoAction = () => ({ label: 'Annulla', run: () => { const l = Store.undo(); Toast.show(l ? 'Modifica annullata' : 'Niente da annullare', 'info'); } });
+  /** Pulsante "Annulla" legato all'azione appena fatta (non all'ultima in assoluto) */
+  const undoAction = (token = Store.lastToken) => ({ label: 'Annulla', run: () => {
+    const r = Store.undo(token);
+    if (r.ok) Toast.show('Modifica annullata', 'info');
+    else Toast.show(r.reason === 'later' ? 'Non si può annullare: nel frattempo ci sono state altre modifiche' : 'Questa azione è già stata annullata', 'warn');
+  } });
+  /** Evita le voci doppie da doppio tocco: se c'è già una voce uguale oggi, chiede conferma con un tocco */
+  let lastQuick = { key: '', at: 0 };
+  function guardQuick(key, already, message, run) {
+    const now = Date.now();
+    if (lastQuick.key === key && now - lastQuick.at < 1500) return false;   // doppio tocco
+    lastQuick = { key, at: now };
+    if (already) { Toast.show(message, 'info', { duration: 6000, action: { label: 'Registra comunque', run } }); return false; }
+    return true;
+  }
+  const todayMaint = tipi => Store.get().logs.maintenance.some(m => m.data === Utils.todayISO() && tipi.includes(m.tipo));
 
   function remove(type, id) {
     const removed = Store.remove(type, id);
     if (!removed) return;
     Toast.show(`${Schema.LOGS[type].label} eliminat${Schema.LOGS[type].g === 'm' ? 'o' : 'a'}`, 'info', { duration: 6000, action: undoAction() });
   }
-  function quickWater() {
+  function quickWater(force = false) {
+    if (!force && !guardQuick('water', todayMaint(['Cambio acqua']), 'Il cambio dell\'acqua di oggi è già registrato', () => quickWater(true))) return;
     const e = Store.add('maintenance', { data: Utils.todayISO(), tipo: 'Cambio acqua', note: '' });
     if (e) Toast.show('Cambio acqua registrato per oggi', 'ok', { action: undoAction() });
   }
-  function quickClean() {
+  function quickClean(force = false) {
+    if (!force && !guardQuick('clean', todayMaint(['Spot cleaning', 'Pulizia profonda']), 'La pulizia di oggi è già registrata', () => quickClean(true))) return;
     const e = Store.add('maintenance', { data: Utils.todayISO(), tipo: 'Spot cleaning', note: '' });
     if (e) Toast.show('Pulizia registrata per oggi', 'ok', { action: undoAction() });
   }
   /** Pasto in un tocco: stessa preda dell'ultima volta, data di oggi */
-  function quickMeal(esito = 'Mangiato') {
+  function quickMeal(esito = 'Mangiato', force = false) {
     const last = Logic.lastMealTemplate();
     if (!last) { Forms.open('feeding'); return; }
+    const already = Store.get().logs.feeding.some(f => f.data === Utils.todayISO() && f.esito === esito);
+    if (!force && !guardQuick('meal-' + esito, already, esito === 'Mangiato' ? 'Il pasto di oggi è già registrato' : 'Il rifiuto di oggi è già registrato', () => quickMeal(esito, true))) return;
     const data = { data: Utils.todayISO(), preda: last.preda, pesoPreda: last.pesoPreda, statoPreda: last.statoPreda, esito, note: '' };
     data.rapporto = Logic.ratio(data.pesoPreda, Logic.weightAt(data.data));
     const e = Store.add('feeding', data);
@@ -3442,9 +3757,10 @@ const Actions = (() => {
         let msg;
         if (mode === 'merge') { const n = Store.merge(parsed); msg = `Unione completata: ${Utils.plural(n, 'voce nuova', 'voci nuove')}`; }
         else { Store.replace(parsed, 'Importazione'); msg = `Backup importato: ${Utils.plural(report.kept, 'voce', 'voci')}`; }
+        const tok = Store.lastToken;
         let np = 0;
         for (const p of photos) { try { if (await Photos.importOne(p)) np++; } catch (e) { /* foto saltata */ } }
-        Toast.show(`${msg}${np ? ` e ${Utils.plural(np, 'foto', 'foto')}` : ''}${dropped ? ` · ${dropped} scartate` : ''}`, dropped ? 'warn' : 'ok', { duration: 7000, action: undoAction() });
+        Toast.show(`${msg}${np ? ` e ${Utils.plural(np, 'foto', 'foto')}` : ''}${dropped ? ` · ${dropped} scartate` : ''}`, dropped ? 'warn' : 'ok', { duration: 7000, action: undoAction(tok) });
       });
     } catch (err) { Toast.show(`Importazione fallita: ${err.message}`, 'bad', { duration: 6000 }); }
   }
@@ -3462,7 +3778,7 @@ const Actions = (() => {
   async function clearAll() {
     const a = await Overlay.confirm({ title: 'Svuota tutti i dati', message: 'Stai per eliminare <b>profilo e tutti i registri</b> salvati in questo browser. Prima salvo una copia di sicurezza che puoi ripristinare da Impostazioni.', confirmLabel: 'Continua', danger: true });
     if (!a) return;
-    const b = await Overlay.confirm({ title: 'Conferma definitiva', message: 'Ultimo passaggio: i dati spariscono da questa schermata.', confirmLabel: 'Elimina tutto', danger: true, requireText: 'ELIMINA' });
+    const b = await Overlay.confirm({ title: 'Conferma definitiva', message: `Ultimo passaggio: i dati spariscono da questa schermata.${Sync.enabled() ? ' La sincronizzazione è attiva: verranno eliminati anche dalla copia su Google Drive e dagli altri dispositivi collegati.' : ''}`, confirmLabel: 'Elimina tutto', danger: true, requireText: 'ELIMINA' });
     if (!b) return;
     await Safety.snapshot('Prima di svuotare i dati');
     Store.reset();
@@ -3478,7 +3794,19 @@ const Actions = (() => {
     Toast.show('Copia ripristinata', 'ok', { action: undoAction() });
   }
 
-  return { remove, quickWater, quickClean, quickMeal, giveDose, runAlertAction, openAddSheet, exportBackup, shareBackup, canShare, importBackup, loadDemo, clearAll, restoreSnapshot, undoAction, saveFile };
+  /** Libera spazio: copia completa in IndexedDB, poi letture vecchie ridotte a una ogni 6 ore */
+  async function compactEnv() {
+    const old = Store.get().logs.env.filter(e => Utils.daysSince(e.datetime) > 90).length;
+    if (!old) { Toast.show('Non ci sono letture più vecchie di 90 giorni da compattare. Esporta un backup ed elimina le foto che non servono.', 'warn', { duration: 9000 }); return; }
+    const ok = await Overlay.confirm({ title: 'Libera spazio', message: `Le letture del clima più vecchie di 90 giorni (${old}) vengono ridotte a una ogni 6 ore. Prima salvo una copia completa che puoi ripristinare da Impostazioni.`, confirmLabel: 'Compatta' });
+    if (!ok) return;
+    const snap = await Safety.snapshot('Prima della compattazione');
+    if (!snap) { Toast.show('Copia di sicurezza non riuscita: esporta un backup prima di compattare.', 'bad', { action: { label: 'Esporta', run: exportBackup } }); return; }
+    const n = Store.compactEnv(90);
+    Toast.show(n ? `Tolte ${Utils.plural(n, 'lettura', 'letture')} vecchie` : 'Nessuna lettura da togliere', n ? 'ok' : 'info', { duration: 6000, action: n ? undoAction() : null });
+  }
+
+  return { remove, quickWater, quickClean, quickMeal, giveDose, runAlertAction, openAddSheet, exportBackup, shareBackup, canShare, importBackup, loadDemo, clearAll, restoreSnapshot, undoAction, saveFile, compactEnv };
 })();
 
 /* ==========================================================================
@@ -3561,7 +3889,7 @@ const Motion = (() => {
       const first = seg.querySelector('.seg-btn');
       const key = (first && (first.dataset.tab || first.dataset.chartRange || first.dataset.filter)) || seg.id || '';
       let ind = seg.querySelector(':scope > .seg-ind');
-      if (!ind) { ind = document.createElement('span'); ind.className = 'seg-ind'; seg.prepend(ind); }
+      if (!ind) { ind = document.createElement('span'); ind.className = 'seg-ind'; ind.setAttribute('data-injected', ''); seg.prepend(ind); }
       seg.classList.add('has-ind');
       const to = { x: a.offsetLeft, w: a.offsetWidth };
       const from = key ? segPos.get(key) : null;
@@ -4747,6 +5075,8 @@ const StoryPrint = (() => {
 const Views = (() => {
   const S = () => Store.get();
   const $ = sel => document.querySelector(sel);
+  /** Aggiornamento mirato della vista (vedi Dom.morph) */
+  const view = sel => ({ set html(h) { Dom.morph($(sel), h); } });
   const tabs = { alimentazione: 'feeding', cura: 'shed', salute: 'waste', gestione: 'scorte' };
   const count = (v, key, dec = 0) => `<span class="num" data-count="${v}" data-key="${key}" data-dec="${dec}">${Utils.fmtNum(v, '', dec)}</span>`;
   const ico = n => Icons.has(n) ? I(n) : n;
@@ -4902,7 +5232,7 @@ const Views = (() => {
     const quick = [['feeding', 'mouse', 'Pasto'], ['env', 'thermo', 'Clima'], ['water', 'drop', 'Acqua'], ['growth', 'scale', 'Peso'], ['shed', 'shed', 'Muta'], ['waste', 'waste', 'Feci']];
 
     Terrarium.closePop();
-    $('#view-dashboard').innerHTML = `
+    view('#view-dashboard').html = `
       <div class="jungle">
         <div class="card terra-panel">
           <div class="tp-head">
@@ -4940,10 +5270,10 @@ const Views = (() => {
     const p = S().profile, brum = Logic.brumState();
     const hot = Logic.range('tempCalda');
     const hasNight = data.some(e => e.tempNotte !== null);
-    $('#view-clima').innerHTML = `
+    view('#view-clima').html = `
       ${brum.active ? `<div class="banner b-info-soft">${I('moon')} <span>Brumazione attiva: le soglie di temperatura sono quelle invernali (${Utils.fmtNum(p.brumTempMin)}–${Utils.fmtNum(p.brumTempMax)} °C).</span></div>` : ''}
       <div class="grid g-main">
-        <div class="card"><div class="card-head"><h2>Andamento</h2>${Charts.rangeControl('env')}</div><div class="chart-box" id="chart-env"></div>
+        <div class="card"><div class="card-head"><h2>Andamento</h2>${Charts.rangeControl('env')}</div><div class="chart-box" id="chart-env" data-keep></div>
           <p class="faint small" style="margin-top:8px"><span class="band-sw"></span> Fascia verde: zona calda ottimale ${Utils.fmtNum(hot.lo)}–${Utils.fmtNum(hot.hi)} °C</p></div>
         <div class="card"><div class="card-head"><h2>Ultimi valori</h2><button class="btn btn-sm" data-add="env">${I('plus')} Lettura</button></div>${gauges()}</div>
       </div>
@@ -4990,11 +5320,11 @@ const Views = (() => {
           <div class="stat"><span>Calo nel mese</span><b class="c-${loss ? (loss.pct >= 10 ? 'bad' : loss.pct >= 6 ? 'warn' : 'ok') : 'ok'}">${loss ? '−' + Utils.fmtNum(loss.pct, '%') : 'nessuno'}</b><small>allarme oltre il 10%</small></div>
           <div class="stat"><span>Fascia per l'età</span><b>${exp ? `${exp.min}–${exp.max} g` : '—'}</b><small>${exp ? 'indicativa, varia molto' : 'serve la data di nascita'}</small></div>
         </div>
-        <div class="card mt"><div class="card-head"><h2>Curva di crescita</h2>${Charts.rangeControl('growth')}</div><div class="chart-box" id="chart-growth"></div>
+        <div class="card mt"><div class="card-head"><h2>Curva di crescita</h2>${Charts.rangeControl('growth')}</div><div class="chart-box" id="chart-growth" data-keep></div>
           ${p.dataNascita ? '<p class="faint small" style="margin-top:8px">Le linee tratteggiate sono la fascia di peso indicativa per l\'età: un riferimento, non una regola.</p>' : ''}</div>
         <div class="card mt"><div class="card-head"><h2>Storico misurazioni</h2><button class="btn btn-sm" data-add="growth">${I('plus')} Misurazione</button></div>${Records.block('growth')}</div>`;
     }
-    $('#view-alimentazione').innerHTML = `<div class="segmented tabs-bar" role="tablist">
+    view('#view-alimentazione').html = `<div class="segmented tabs-bar" role="tablist">
         <button class="seg-btn${tab === 'feeding' ? ' active' : ''}" data-tab="alimentazione" data-value="feeding">${I('mouse')} Pasti</button>
         <button class="seg-btn${tab === 'growth' ? ' active' : ''}" data-tab="alimentazione" data-value="growth">${I('scale')} Crescita</button>
       </div>${body}`;
@@ -5052,7 +5382,7 @@ const Views = (() => {
       </div>`;
     }
     const def = Schema.LOGS[tab];
-    $('#view-cura').innerHTML = `<div class="segmented tabs-bar" role="tablist">
+    view('#view-cura').html = `<div class="segmented tabs-bar" role="tablist">
         ${['shed', 'maintenance', 'handling'].map(t => `<button class="seg-btn${tab === t ? ' active' : ''}" data-tab="cura" data-value="${t}">${I(Schema.LOGS[t].icon)} ${t === 'shed' ? 'Mute' : Schema.LOGS[t].label}</button>`).join('')}
       </div>
       ${summary}
@@ -5104,12 +5434,12 @@ const Views = (() => {
     const head = `<div class="row-between salute-head"><div class="segmented tabs-bar" role="tablist" style="margin-bottom:0">${Object.keys(labels).map(t => `<button class="seg-btn${tab === t ? ' active' : ''}" data-tab="salute" data-value="${t}">${I(icons[t])} ${labels[t]}</button>`).join('')}</div>
       <button class="btn btn-sm" data-vetsheet>${I('clipboard')} Scheda per il veterinario</button></div>`;
     if (tab === 'foto') {
-      $('#view-salute').innerHTML = `${head}<div class="card mt"><div class="card-head"><h2>Diario fotografico</h2><div class="row"><button class="btn btn-sm" data-compare ${photoSel.size === 2 ? '' : 'disabled'}>${I('compare')} Confronta (${photoSel.size}/2)</button><button class="btn btn-sm btn-primary" data-photo-add>${I('camera')} Aggiungi</button></div></div><div id="photoGrid" class="photo-grid">${'<div class="skel"></div>'.repeat(4)}</div></div>`;
+      view('#view-salute').html = `${head}<div class="card mt"><div class="card-head"><h2>Diario fotografico</h2><div class="row"><button class="btn btn-sm" data-compare ${photoSel.size === 2 ? '' : 'disabled'}>${I('compare')} Confronta (${photoSel.size}/2)</button><button class="btn btn-sm btn-primary" data-photo-add>${I('camera')} Aggiungi</button></div></div><div id="photoGrid" class="photo-grid" data-keep>${'<div class="skel"></div>'.repeat(4)}</div></div>`;
       fillPhotos();
       return;
     }
     const def = Schema.LOGS[tab];
-    $('#view-salute').innerHTML = `${head}<div class="mt">${summary}</div>
+    view('#view-salute').html = `${head}<div class="mt">${summary}</div>
       <div class="card mt"><div class="card-head"><h2>${def.label === 'Evacuazione' ? 'Storico feci e urati' : 'Storico ' + labels[tab].toLowerCase()}</h2><button class="btn btn-sm" data-add="${tab}">${I('plus')} ${def.label}</button></div>${Records.block(tab)}</div>`;
   }
   async function fillPhotos() {
@@ -5118,12 +5448,13 @@ const Views = (() => {
     const list = await Photos.list();
     [...photoSel].forEach(id => { if (!list.some(p => p.id === id)) photoSel.delete(id); });
     if (!list.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-ico">${I('camera')}</div><b>Nessuna foto</b><p>Fotografa il serpente ogni mese o dopo la muta: poi potrai confrontare prima e dopo.</p><button class="btn btn-primary btn-sm" data-photo-add>${I('camera')} Aggiungi la prima foto</button></div>`; return; }
-    grid.innerHTML = list.map(p => { const w = Logic.weightAt(p.date); return `<figure class="photo ${photoSel.has(p.id) ? 'sel' : ''}" data-photo="${p.id}">
+    if (grid.querySelector('.skel, .empty')) grid.innerHTML = '';
+    Dom.morph(grid, list.map(p => { const w = Logic.weightAt(p.date); return `<figure class="photo ${photoSel.has(p.id) ? 'sel' : ''}" data-photo="${p.id}">
         <img src="${Photos.url(p)}" alt="Foto del ${Utils.fmtDate(p.date)}" loading="lazy">
         <figcaption><b>${Utils.fmtDate(p.date)}</b><span>${Utils.esc(p.tag)}${w !== null ? ' · ' + Utils.fmtNum(w, 'g') : ''}</span>${p.note ? `<small>${Utils.esc(p.note)}</small>` : ''}</figcaption>
         <button class="photo-del btn btn-sm btn-icon" data-photo-del="${p.id}" aria-label="Elimina foto">${I('trash')}</button>
         <span class="photo-check">${I('check')}</span>
-      </figure>`; }).join('');
+      </figure>`; }).join(''));
   }
   function togglePhoto(id) {
     if (photoSel.has(id)) photoSel.delete(id);
@@ -5145,7 +5476,7 @@ const Views = (() => {
     const sug = Logic.suggestedInterval(), brum = Logic.brumState();
     const age = Safety.backupAge();
     const ach = Logic.achievements();
-    $('#view-impostazioni').innerHTML = `
+    view('#view-impostazioni').html = `
       <div class="grid g-main">
         <form class="card" id="settingsForm" novalidate>
           <fieldset><legend>${I('snake')} Profilo</legend><div class="form-grid">
@@ -5153,7 +5484,7 @@ const Views = (() => {
             <div class="field"><span class="field-label">Sesso</span><div class="chips">${Schema.OPTIONS.sesso.map(o => `<label class="chip"><input type="radio" name="sesso" value="${o}" ${p.sesso === o ? 'checked' : ''}>${o}</label>`).join('')}</div></div>
             <div class="full">${f('morph', 'Morph / fase', 'maxlength="80" list="morphList" autocomplete="off" placeholder="Es. Amel, Snow Motley, Okeetee"')}
               <datalist id="morphList">${Morph.names().map(n => `<option value="${Utils.esc(n)}">`).join('')}</datalist>
-              <div class="morph-preview" id="morphPreview">${morphPreviewHTML(p.morph)}</div></div>
+              <div class="morph-preview" id="morphPreview" data-keep>${morphPreviewHTML(p.morph)}</div></div>
             ${d('dataNascita', 'Data di nascita')}
             ${d('dataArrivo', 'Data di arrivo')}
             ${f('pesoAttuale', 'Peso attuale', `type="number" step="0.1" min="0" inputmode="decimal" ${hasGrowthW ? 'readonly' : ''}`, 'g', hasGrowthW ? 'Preso dall\'ultima pesata: per cambiarlo aggiungi una misurazione.' : '')}
@@ -5195,11 +5526,11 @@ const Views = (() => {
               <div class="setting-row"><div><b>Esporta backup</b><p>File JSON con dati${'indexedDB' in window ? ' e foto' : ''}. Sul PC puoi scegliere la cartella.</p></div><button class="btn btn-sm btn-primary" data-export>${I('download')} Esporta</button></div>
               ${Actions.canShare() ? `<div class="setting-row"><div><b>Condividi backup</b><p>Salvalo su Drive, email o un'altra app</p></div><button class="btn btn-sm" data-share>${I('share')} Condividi</button></div>` : ''}
               <div class="setting-row"><div><b>Importa backup</b><p>Unisci o sostituisci, con riepilogo prima di confermare</p></div><button class="btn btn-sm" data-import>${I('upload')} Importa</button></div>
-              <div class="setting-row"><div><b>Archiviazione protetta</b><p id="persistInfo">Controllo…</p></div><span id="persistBadge"></span></div>
+              <div class="setting-row"><div><b>Archiviazione protetta</b><p id="persistInfo" data-keep>Controllo…</p></div><span id="persistBadge" data-keep></span></div>
             </div>
             <h3 style="margin:16px 0 8px">Copie automatiche</h3>
             <p class="faint small" style="margin-bottom:8px">Salvate in questo browser prima di import, demo, svuotamento e una volta a settimana. Le ultime 6.</p>
-            <div id="snapList" class="snap-list"><p class="faint small">Carico…</p></div>
+            <div id="snapList" class="snap-list" data-keep><p class="faint small">Carico…</p></div>
             <p class="faint small" style="margin-top:12px">${Utils.plural(total, 'voce', 'voci')} · ${(size / 1024).toFixed(1).replace('.', ',')} KB${st.updatedAt ? ` · salvato ${Utils.toDMY(st.updatedAt.slice(0, 10))} ${new Date(st.updatedAt).toTimeString().slice(0, 5)}` : ''}</p>
           </div>
           <div class="card"><div class="card-head"><h2>${I('palette')} Aspetto</h2><span class="sub">solo su questo dispositivo</span></div>
@@ -5251,7 +5582,7 @@ const Views = (() => {
     const list = await Safety.list();
     const host = document.getElementById('snapList');
     if (!host) return;
-    host.innerHTML = list.length ? list.map(x => `<div class="snap"><span>${I('history')}</span><div><b>${Utils.toDMY(x.at.slice(0, 10))} ${new Date(x.at).toTimeString().slice(0, 5)}</b><small>${Utils.esc(x.reason)} · ${Utils.plural(x.count, 'voce', 'voci')}${x.name ? ' · ' + Utils.esc(x.name) : ''}</small></div><button class="btn btn-sm" data-snap="${x.id}">Ripristina</button></div>`).join('') : '<p class="faint small">Nessuna copia ancora.</p>';
+    Dom.morph(host, list.length ? list.map(x => `<div class="snap"><span>${I('history')}</span><div><b>${Utils.toDMY(x.at.slice(0, 10))} ${new Date(x.at).toTimeString().slice(0, 5)}</b><small>${Utils.esc(x.reason)} · ${Utils.plural(x.count, 'voce', 'voci')}${x.name ? ' · ' + Utils.esc(x.name) : ''}</small></div><button class="btn btn-sm" data-snap="${x.id}">Ripristina</button></div>`).join('') : '<p class="faint small">Nessuna copia ancora.</p>');
   }
 
   function morphPreviewHTML(value) {
@@ -5341,7 +5672,7 @@ const Views = (() => {
         <div class="card mt"><div class="card-head"><h2>Spese</h2><button class="btn btn-sm" data-add="expense">${I('plus')} Spesa</button></div>
           <p class="faint small" style="margin:-6px 0 12px">I totali includono anche il costo degli acquisti di prede e delle visite veterinarie.</p>${Records.block('expense')}</div>`;
     }
-    $('#view-gestione').innerHTML = head + body;
+    view('#view-gestione').html = head + body;
   }
 
   /* ---------- La storia del serpente ---------- */
@@ -5569,10 +5900,24 @@ const Demo = (() => {
    PWA — service worker e installazione
    ========================================================================== */
 const PWA = (() => {
-  let deferred = null;
+  let deferred = null, updateAsked = false;
+  /** Nuova versione scaricata: si propone di aggiornare invece di cambiare l'app a metà uso */
+  function watchUpdates(reg) {
+    const offer = w => {
+      if (!w || !navigator.serviceWorker.controller) return;   // prima installazione: niente da chiedere
+      Toast.show('È disponibile una nuova versione di SNAKEcheck', 'info', { duration: 30000, action: { label: 'Aggiorna', run: () => { updateAsked = true; w.postMessage({ type: 'skip' }); } } });
+    };
+    if (reg.waiting) offer(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
+    });
+  }
   function init() {
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker non registrato', err)));
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then(watchUpdates).catch(err => console.warn('Service worker non registrato', err)));
+      let reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (updateAsked && !reloading) { reloading = true; location.reload(); } });
     }
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; const row = document.getElementById('installRow'); if (row) row.classList.remove('hidden'); });
     window.addEventListener('appinstalled', () => { deferred = null; Toast.show('SNAKEcheck installata sulla schermata Home', 'ok'); });

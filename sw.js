@@ -1,12 +1,14 @@
 // Service worker di SNAKEcheck: memorizza l'app per l'uso offline e mostra i promemoria.
 // Cambia VERSION a ogni aggiornamento di index.html per distribuire la nuova versione.
-const VERSION = 'snakecheck-v8';
+const VERSION = 'snakecheck-v9';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // La nuova versione aspetta: l'app chiede all'utente se aggiornare (messaggio "skip")
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)));
 });
+self.addEventListener('message', e => { if (e.data && e.data.type === 'skip') self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
