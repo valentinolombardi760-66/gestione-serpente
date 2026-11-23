@@ -1255,6 +1255,8 @@ h1 { font-weight: 800; letter-spacing: -.03em; }
   .terra-panel { display: flex; flex-direction: column; }
   .terra-panel .terra-wrap { order: 1; }
   .terra-panel .terra-legend { order: 3; padding: 0 16px; }
+  .terra-panel #terraSlot { display: contents; }
+  .terra-panel .tt-bar { order: 4; margin: 12px 16px 0; }
   .terra-panel #terraPop { margin-left: 12px !important; margin-right: 12px !important; }
   .tp-head { flex-wrap: wrap; }
   .tp-head .status-pill { width: 100%; justify-content: center; }
@@ -1388,6 +1390,128 @@ h1 { font-weight: 800; letter-spacing: -.03em; }
   .btn.is-busy .ic { animation-duration: .8s !important; animation-iteration-count: infinite !important; }
 }
 
+
+/* ==========================================================================
+   15. FUNZIONI v7 — previsioni, agenda, macchina del tempo, giro, comando
+   ========================================================================== */
+/* Previsioni */
+.fc-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1100px) { .fc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  /* Telefono: le previsioni scorrono di lato, l'agenda resta subito visibile */
+  .fc-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .fc-grid::-webkit-scrollbar { display: none; }
+  .fc-tile { flex: 0 0 78%; scroll-snap-align: start; scroll-margin-left: 16px; }
+  .fc-card { padding-bottom: 12px; }
+  .ag-day { padding: 8px; }
+  .ag-day.empty-day { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
+  .ag-day.empty-day .ag-head { margin: 0; }
+  .ag-day.empty-day .ag-empty { padding: 0; }
+  .ag-days { gap: 8px; }
+}
+.fc-tile { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: var(--r-sm); background: var(--elev); border: 1px solid var(--border); min-width: 0; }
+.fc-tile > div { min-width: 0; }
+.fc-tile b { display: block; font-size: 1rem; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.fc-tile small { display: block; font-size: .74rem; color: var(--faint); line-height: 1.4; margin-top: 3px; }
+.fc-ico { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.fc-pm { font-size: .76rem; font-weight: 500; color: var(--faint); }
+.fc-off .fc-ico { color: var(--faint); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.fc-off b { color: var(--faint); }
+
+/* Agenda */
+.ag-top { gap: 10px; flex-wrap: wrap; }
+.ag-top h2 { font-size: 1.05rem; }
+.ag-hint { margin: 4px 0 12px; }
+.ag-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.ag-day { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 10px; min-width: 0; position: relative; }
+.ag-day.today { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%), var(--card); }
+.ag-day.empty-day { opacity: .7; }
+.ag-day::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; border: 2px dashed var(--accent); opacity: 0; transform: scale(.98); transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--spring); pointer-events: none; }
+.is-dragging .ag-day::after { opacity: .25; transform: none; }
+.ag-day.drop-on::after { opacity: 1; }
+.ag-head { font-size: .82rem; font-weight: 700; margin: 2px 4px 8px; display: flex; gap: 6px; align-items: baseline; }
+.ag-head span { font-weight: 500; color: var(--faint); font-size: .76rem; }
+.ag-list { display: flex; flex-direction: column; gap: 6px; }
+.ag-empty { padding: 4px; }
+.ag-item { --dx: 0px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 9px; border-radius: var(--r-sm); background: var(--elev); border: 1px solid var(--border); min-height: 48px; position: relative; touch-action: pan-y; }
+.ag-item.swiping { transform: translateX(var(--dx)); transition: none; }
+.ag-item[data-swipe]::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--ok-soft); opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); pointer-events: none; }
+.ag-item.armed::before { opacity: 1; }
+.ag-item.armed .ag-ico { color: var(--ok); transform: scale(1.12); }
+.ag-item[draggable="true"] { cursor: grab; }
+.ag-item.dragging { opacity: .45; }
+.ag-ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--muted); transition: transform var(--dur-spring) var(--spring), color var(--dur-fast) var(--ease-out); }
+.ag-txt { min-width: 0; }
+.ag-txt b { display: block; font-size: .85rem; font-weight: 600; }
+.ag-txt small { display: block; font-size: .74rem; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ag-act { display: flex; gap: 4px; }
+.ag-item.l-warn { border-color: rgba(251,191,36,.3); } .ag-item.l-warn .ag-ico { color: var(--warn); background: var(--warn-soft); }
+.ag-item.l-info .ag-ico { color: var(--indigo); background: var(--info-soft); }
+.ag-item.fc { border-style: dashed; background: transparent; }
+.ag-item.fc .ag-ico { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.ag-item.faint { opacity: .6; background: transparent; }
+.ag-item.done { opacity: .6; background: transparent; }
+.ag-item.done .ag-ico { color: var(--ok); background: var(--ok-soft); }
+.ag-item.done b { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text) 35%, transparent); }
+.ag-item.is-new { animation: rise var(--dur-slow) var(--ease-out) both; }
+.today-more { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 40px; padding: 8px 10px; border: 1px dashed var(--border-strong); border-radius: var(--r-sm); background: transparent; color: var(--muted); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+.today-more span { display: inline-flex; gap: 8px; align-items: center; }
+.today-more:hover { color: var(--text); border-color: var(--accent); }
+.move-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 380px) { .move-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.move-day { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 56px; padding: 8px 2px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--elev); color: var(--text); font: inherit; cursor: pointer; transition: transform var(--dur-spring) var(--spring), border-color var(--dur-fast) var(--ease-out); }
+.move-day small { font-size: .68rem; color: var(--faint); }
+.move-day b { font-size: 1.05rem; }
+.move-day:hover { border-color: var(--accent); }
+.move-day:active { transform: scale(.94); transition-duration: var(--dur-instant); }
+.move-day.cur { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--elev)); }
+
+/* Macchina del tempo */
+.tt-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ico range now" "lab lab lab"; gap: 6px 10px; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: var(--r); background: var(--elev); border: 1px solid var(--border); transition: border-color var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out); }
+.tt-bar.on { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: color-mix(in srgb, var(--accent) 7%, var(--elev)); }
+.tt-ico { grid-area: ico; color: var(--muted); display: grid; }
+.tt-bar.on .tt-ico { color: var(--accent); }
+.tt-range { grid-area: range; width: 100%; accent-color: var(--accent); height: 28px; margin: 0; cursor: pointer; }
+.tt-bar [data-tt-now] { grid-area: now; }
+.tt-label { grid-area: lab; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: .8rem; min-height: 1.4em; }
+.tt-label span { color: var(--faint); font-size: .76rem; }
+#terraSlot { position: relative; }
+
+/* Giro di controllo */
+.rd-sec { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.rd-sec:last-child { border-bottom: 0; }
+.rd-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; min-height: 44px; }
+.rd-txt { min-width: 0; }
+.rd-txt b { display: flex; gap: 8px; align-items: center; font-size: .9rem; font-weight: 600; }
+.rd-txt small { display: block; font-size: .76rem; color: var(--faint); margin-top: 1px; }
+.rd-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+@media (max-width: 340px) { .rd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rd-grid .field-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-num .input { font-variant-numeric: tabular-nums; }
+.rd-more { display: none; }
+.rd-more .chips { margin-top: 8px; }
+.rd-more.open { display: block; animation: rise var(--dur-base) var(--ease-out) both; }
+.rd-sec:has(input[name="env"]:not(:checked)) .rd-grid { opacity: .45; }
+
+/* Comando rapido */
+.modal.cmd-modal { max-width: 560px; }
+.cmd-input .input { height: 50px; font-size: 1.02rem; }
+#cmdOut { min-height: 64px; margin: 10px 0; }
+.cmd-prev { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: var(--r); background: color-mix(in srgb, var(--accent) 8%, var(--elev)); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); animation: rise var(--dur-base) var(--ease-out) both; }
+.cmd-prev.nav { align-items: center; }
+.cmd-prev > div { min-width: 0; }
+.cmd-fields { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+.cmd-fields span { display: flex; flex-direction: column; }
+.cmd-fields small { font-size: .7rem; color: var(--faint); }
+.cmd-fields b { font-size: .86rem; font-weight: 600; }
+.cmd-none { padding: 12px 2px; }
+.cmd-ex { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.add-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-day::after, .ag-ico, .move-day, .tt-bar { transition: none; }
+  .cmd-prev, .ag-item.is-new, .rd-more.open { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -1426,6 +1550,7 @@ h1 { font-weight: 800; letter-spacing: -.03em; }
 
   <main class="content" id="content">
     <section class="view" id="view-dashboard" aria-label="Dashboard"></section>
+    <section class="view" id="view-agenda" aria-label="Agenda"></section>
     <section class="view" id="view-clima" aria-label="Terrario e clima"></section>
     <section class="view" id="view-alimentazione" aria-label="Alimentazione e crescita"></section>
     <section class="view" id="view-cura" aria-label="Mute, manutenzione e handling"></section>
@@ -1457,8 +1582,12 @@ const Utils = (() => {
 
   const toISODate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const toLocalDT = d => `${toISODate(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  const todayISO = () => toISODate(new Date());
-  const nowLocal = () => toLocalDT(new Date());
+  /** "Adesso" dell'app: di solito l'ora reale, ma la macchina del tempo può spostarlo (Utils.at) */
+  let fixedNow = null;
+  const now = () => fixedNow ? new Date(fixedNow.getTime()) : new Date();
+  const at = (date, fn) => { const prev = fixedNow; fixedNow = date instanceof Date ? date : parse(date); try { return fn(); } finally { fixedNow = prev; } };
+  const todayISO = () => toISODate(now());
+  const nowLocal = () => toLocalDT(now());
 
   /** Interpreta "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm" come data locale; null se non valida */
   const parse = str => {
@@ -1471,7 +1600,7 @@ const Utils = (() => {
   };
   const isValidDate = s => parse(s) !== null;
   const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const daysSince = s => { const d = parse(s); return d ? Math.round((midnight(new Date()) - midnight(d)) / DAY) : null; };
+  const daysSince = s => { const d = parse(s); return d ? Math.round((midnight(now()) - midnight(d)) / DAY) : null; };
   const daysBetween = (a, b) => { const x = parse(a), y = parse(b); return x && y ? Math.round((midnight(y) - midnight(x)) / DAY) : null; };
   const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
   const hasTime = s => typeof s === 'string' && /T\d{2}:\d{2}/.test(s);
@@ -1496,7 +1625,7 @@ const Utils = (() => {
     const d = parse(s);
     if (!d) return '—';
     if (!hasTime(s)) return relDays(daysSince(s));
-    const mins = Math.round((Date.now() - d.getTime()) / 60000);
+    const mins = Math.round((now().getTime() - d.getTime()) / 60000);
     if (mins >= 0 && mins < 1) return 'adesso';
     if (mins >= 0 && mins < 60) return `${mins} min fa`;
     if (mins >= 0 && mins < 60 * 12 && daysSince(s) === 0) return `${Math.round(mins / 60)} h fa`;
@@ -1508,10 +1637,10 @@ const Utils = (() => {
   const age = s => {
     const b = parse(s);
     if (!b) return null;
-    const now = new Date();
-    if (b > now) return null;
-    let y = now.getFullYear() - b.getFullYear(), m = now.getMonth() - b.getMonth(), d = now.getDate() - b.getDate();
-    if (d < 0) { m--; d += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+    const n = now();
+    if (b > n) return null;
+    let y = n.getFullYear() - b.getFullYear(), m = n.getMonth() - b.getMonth(), d = n.getDate() - b.getDate();
+    if (d < 0) { m--; d += new Date(n.getFullYear(), n.getMonth(), 0).getDate(); }
     if (m < 0) { y--; m += 12; }
     const parts = [];
     if (y > 0) parts.push(plural(y, 'anno', 'anni'));
@@ -1561,10 +1690,10 @@ const Utils = (() => {
     return `${pad(+m[1])}:${m[2]}`;
   };
   /** Mesi interi trascorsi da una data */
-  const monthsSince = s => { const b = parse(s); if (!b) return null; const n = new Date(); let m = (n.getFullYear() - b.getFullYear()) * 12 + n.getMonth() - b.getMonth(); if (n.getDate() < b.getDate()) m--; return m < 0 ? null : m; };
+  const monthsSince = s => { const b = parse(s); if (!b) return null; const n = now(); let m = (n.getFullYear() - b.getFullYear()) * 12 + n.getMonth() - b.getMonth(); if (n.getDate() < b.getDate()) m--; return m < 0 ? null : m; };
   const weekday = s => { const d = parse(s); return d ? ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'][d.getDay()] : ''; };
 
-  return { pad, toISODate, toLocalDT, todayISO, nowLocal, parse, isValidDate, daysSince, daysBetween, addDays, hasTime, fmtDate, fmtDateShort, fmtTime, fmtDateTime, fmtAxis, plural, relDays, relTime, cap, age, num, round, fmtNum, esc, uid, clamp, reducedMotion, toDMY, fromDMY, normTime, monthsSince, weekday, DAY };
+  return { now, at, pad, toISODate, toLocalDT, todayISO, nowLocal, parse, isValidDate, daysSince, daysBetween, addDays, hasTime, fmtDate, fmtDateShort, fmtTime, fmtDateTime, fmtAxis, plural, relDays, relTime, cap, age, num, round, fmtNum, esc, uid, clamp, reducedMotion, toDMY, fromDMY, normTime, monthsSince, weekday, DAY };
 })();
 
 /* ==========================================================================
@@ -1851,7 +1980,8 @@ const Schema = (() => {
     brumInizio: '', brumFine: '', brumTempMin: 10, brumTempMax: 16,
     luceOn: '08:00', luceOff: '20:00',
     notifiche: false,
-    scortaMin: 4
+    scortaMin: 4,
+    pastoSpostato: ''   // "data ultimo pasto|nuova data": pasto spostato dall'agenda
   };
   const NUMERIC_PROFILE = ['scortaMin', 'pesoAttuale', 'lunghezzaAttuale', 'intervalloPasti', 'intervalloAcqua', 'intervalloPulizia', 'tempCaldaMin', 'tempCaldaMax', 'tempFreddaMin', 'tempFreddaMax', 'umiditaMin', 'umiditaMax', 'tempNotteMin', 'tempNotteMax', 'brumTempMin', 'brumTempMax'];
   const NULLABLE_PROFILE = ['pesoAttuale', 'lunghezzaAttuale'];
@@ -2174,9 +2304,9 @@ const Store = (() => {
       state.profileAt = at;
       commit();
     },
-    updateProfile(patch) {
+    updateProfile(patch, label = 'Modifica profilo') {
       const prev = clone(state.profile), prevAt = state.profileAt;
-      record('Modifica profilo', { op: 'profile', prev, prevAt });
+      record(label, { op: 'profile', prev, prevAt });
       Object.assign(state.profile, patch);
       state.profileAt = nowISO();
       commit();
@@ -2203,6 +2333,19 @@ const Store = (() => {
       commit();
       return ok.length;
     },
+    /** Più voci di registri diversi (es. giro di controllo) con un solo salvataggio e un solo "Annulla" */
+    addBatch(list, label = 'Giro di controllo') {
+      const ok = list.map(({ type, data }) => ({ type, e: normalizeEntry(type, { ...data, id: Utils.uid(), _m: nowISO() }) })).filter(x => x.e);
+      if (!ok.length) return [];
+      record(label, { op: 'add', items: ok.map(({ type, e }) => ({ type, id: e.id })) });
+      ok.forEach(({ type, e }) => { state.logs[type].push(e); touch(e.id); });
+      new Set(ok.map(x => x.type)).forEach(t => sortLog(t, state.logs[t]));
+      syncProfileFromGrowth();
+      commit();
+      return ok.map(x => x.e);
+    },
+    /** Esegue fn vedendo uno stato diverso (sola lettura, es. la macchina del tempo) */
+    peek(view, fn) { const keep = state; state = view; try { return fn(); } finally { state = keep; } },
     update(type, id, data) {
       const i = state.logs[type].findIndex(e => e.id === id);
       if (i < 0) return null;
@@ -2632,10 +2775,14 @@ const Logic = (() => {
     const paused = brum.active ? 'brumazione' : shed.inShed ? 'muta' : null;
     if (!lastEaten) return { target, lastEaten, lastAny, days: null, remaining: null, status: 'neutral', paused, next: null };
     const days = Utils.daysSince(lastEaten.data);
-    const remaining = target - days;
+    let next = Utils.toISODate(Utils.addDays(Utils.parse(lastEaten.data), target));
+    // Pasto spostato dall'agenda: vale finché non arriva un pasto nuovo
+    const [from, to] = String(P().pastoSpostato || '').split('|');
+    const moved = from === lastEaten.data && Utils.isValidDate(to) && to > lastEaten.data ? to : null;
+    if (moved) next = moved;
+    const remaining = moved ? -Utils.daysSince(moved) : target - days;
     const status = paused ? 'info' : remaining > 0 ? 'ok' : remaining === 0 ? 'warn' : (-remaining > 3 ? 'bad' : 'warn');
-    const next = Utils.toISODate(Utils.addDays(Utils.parse(lastEaten.data), target));
-    return { target, lastEaten, lastAny, days, remaining, status, paused, next };
+    return { target, lastEaten, lastAny, days, remaining, status, paused, next, moved };
   };
   /** Rifiuti consecutivi più recenti, esclusi quelli in muta o in brumazione */
   function refusals() {
@@ -2969,7 +3116,132 @@ const Logic = (() => {
     return A.map(([id, icon, title, desc, done]) => ({ id, icon, title, desc, done }));
   }
 
-  return { preyForWeight, stockState, expenseSummary, lifeEvents, currentWeight, currentLength, weightAt, ratio, ratioStatus, ratioLabel, RANGES, ENV_KEYS, range, evalParam, envNow, shedState, inShedOn, shedHumidity, feedingState, suggestedInterval, targetInterval, refusals, lastMealTemplate, waterState, cleanState, weightTrend, weightLoss, expectedWeight, monthsAt, brumState, medState, activeMeds, openSymptoms, alerts, todayTasks, headline, achievements };
+  /* ---------- Previsioni: calcolate solo dai dati già registrati ---------- */
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1)); };
+  const addDaysISO = (iso, n) => Utils.toISODate(Utils.addDays(Utils.parse(iso), Math.round(n)));
+
+  /** Prossima muta dagli intervalli tra le mute passate */
+  function predictShed() {
+    const starts = [...L().shed].map(s => s.dataInizio).filter(Boolean).sort();
+    const st = shedState();
+    if (st.inShed) return { ok: false, inShed: true, text: `In muta da ${Utils.plural(st.days, 'giorno', 'giorni')}` };
+    if (starts.length < 3) return { ok: false, text: `Servono almeno 3 mute registrate (ora ${starts.length})` };
+    const gaps = starts.slice(1).map((d, i) => Utils.daysBetween(starts[i], d)).filter(g => g > 5).slice(-6);
+    if (gaps.length < 2) return { ok: false, text: 'Intervalli tra le mute troppo irregolari' };
+    const m = mean(gaps), dev = Math.max(3, Math.round(sd(gaps)));
+    let date = addDaysISO(starts[starts.length - 1], m);
+    const late = Utils.daysSince(date) > 0;
+    if (late) date = today();
+    // Segnale in più: rifiuti recenti fuori dalla muta anticipano spesso la fase opaca
+    const hint = refusals() >= 1 ? 'un rifiuto recente può essere il primo segnale' : '';
+    return { ok: true, date, from: addDaysISO(date, -dev), to: addDaysISO(date, dev), basis: gaps.length + 1, every: Math.round(m), late, hint };
+  }
+
+  /** Retta dei pesi degli ultimi 120 giorni (minimi quadrati) */
+  function weightModel() {
+    const pts = L().growth.filter(g => g.peso !== null && Utils.daysSince(g.data) <= 120).map(g => ({ x: -Utils.daysSince(g.data), y: g.peso }));
+    if (pts.length < 3) return { ok: false, text: `Servono almeno 3 pesate negli ultimi 4 mesi (ora ${pts.length})` };
+    const span = Math.max(...pts.map(p => p.x)) - Math.min(...pts.map(p => p.x));
+    if (span < 14) return { ok: false, text: 'Le pesate coprono meno di 2 settimane' };
+    const mx = mean(pts.map(p => p.x)), my = mean(pts.map(p => p.y));
+    const sxx = pts.reduce((a, p) => a + (p.x - mx) ** 2, 0);
+    const slope = pts.reduce((a, p) => a + (p.x - mx) * (p.y - my), 0) / sxx;
+    const icpt = my - slope * mx;
+    const res = sd(pts.map(p => p.y - (icpt + slope * p.x)));
+    const at = d => Math.max(0, icpt + slope * d);
+    const band = d => Math.max(1, res * 1.5 + Math.abs(slope) * d * .15);
+    return { ok: true, slope, at, band, basis: pts.length };
+  }
+  function predictWeight() {
+    const m = weightModel();
+    if (!m.ok) return m;
+    const w30 = m.at(30), w90 = m.at(90);
+    return { ok: true, perMonth: Utils.round(m.slope * 30, 1), w30: Utils.round(w30, 1), w90: Utils.round(w90, 1), b30: Utils.round(m.band(30), 1), b90: Utils.round(m.band(90), 1), basis: m.basis, model: m };
+  }
+  /** Quando passare alla taglia di preda successiva */
+  function predictPrey() {
+    const m = weightModel();
+    const cur = (lastMealTemplate() || {}).preda;
+    const order = Schema.OPTIONS.preda;
+    if (!cur || !PREY_W[cur]) return { ok: false, text: 'Serve almeno un pasto con la taglia della preda' };
+    const now = preyForWeight(currentWeight());
+    if (now && order.indexOf(now) > order.indexOf(cur)) return { ok: true, date: today(), next: now, cur, already: true };
+    if (!m.ok) return m;
+    if (m.slope <= 0) return { ok: false, text: 'Il peso non sta salendo: nessun cambio previsto' };
+    for (let d = 1; d <= 240; d++) {
+      const p = preyForWeight(m.at(d));
+      if (order.indexOf(p) > order.indexOf(cur)) return { ok: true, date: addDaysISO(today(), d), next: p, cur, days: d };
+    }
+    return { ok: false, text: `Resterà su ${cur} per almeno 8 mesi` };
+  }
+  /** In che giorno finiscono le prede della taglia in uso */
+  function predictStock() {
+    const s = stockState();
+    if (!s.cur) return { ok: false, text: 'Registra le prede comprate per sapere quando finiscono' };
+    if (s.cur.left <= 0) return { ok: true, date: today(), left: 0, preda: s.cur.preda, out: true };
+    return { ok: true, date: addDaysISO(feedingState().next || today(), (s.cur.left - 1) * targetInterval()), left: s.cur.left, preda: s.cur.preda };
+  }
+  const predictions = () => ({ shed: predictShed(), weight: predictWeight(), prey: predictPrey(), stock: predictStock() });
+
+  /* ---------- Agenda: le prossime cose da fare, giorno per giorno ---------- */
+  function agenda(days = 14) {
+    const t = today(), end = addDaysISO(t, days - 1);
+    const items = [];
+    const push = (date, it) => { const d = date < t ? t : date; if (d <= end) items.push({ ...it, date: d, late: date < t ? Utils.daysBetween(date, t) : 0 }); };
+    // Scadenza ripetuta: se è già passata compare oggi "in ritardo", poi si ripete dall'oggi
+    const repeat = (first, every, make) => {
+      if (!first) return;
+      let d = first;
+      for (let i = 0; i < 30 && d <= end; i++) { push(d, make(i, d)); d = addDaysISO(d < t ? t : d, Math.max(1, every)); }
+    };
+
+    const feed = feedingState(), brum = brumState();
+    const { done } = todayTasks();
+    done.forEach(x => items.push({ id: 'done-' + x.id, date: t, icon: x.icon, title: x.title, sub: x.sub, done: true }));
+    const fedToday = L().feeding.some(f => f.data === t);
+    if (feed.next && !brum.active && !fedToday) {
+      repeat(feed.next, feed.target, i => ({ id: 'meal-' + i, kind: 'meal', icon: 'mouse', title: i ? 'Pasto (previsto)' : 'Pasto', sub: feed.paused ? `sospeso per la ${feed.paused}` : `${(lastMealTemplate() || {}).preda || ''}${feed.moved && !i ? ' · spostato' : ''}`, level: feed.paused ? 'info' : 'warn', movable: !i && !feed.paused, action: !i && !feed.paused ? { kind: 'meal' } : null, faint: !!i }));
+    } else if (fedToday && feed.target) {
+      push(addDaysISO(t, feed.target), { id: 'meal-0', kind: 'meal', icon: 'mouse', title: 'Pasto (previsto)', sub: (lastMealTemplate() || {}).preda || '', faint: true });
+    }
+    const w = waterState();
+    const wNext = w.last ? addDaysISO(w.last.data, w.target) : t;
+    if (!(w.days === 0)) repeat(wNext, w.target, i => ({ id: 'water-' + i, icon: 'drop', title: 'Cambio acqua', sub: i ? '' : w.last ? `ultimo ${Utils.relDays(w.days)}` : 'mai registrato', level: 'info', action: !i ? { kind: 'water' } : null, faint: !!i }));
+    else repeat(addDaysISO(t, w.target), w.target, () => ({ id: 'water-n', icon: 'drop', title: 'Cambio acqua', faint: true }));
+    const c = cleanState();
+    const cNext = c.last ? addDaysISO(c.last.data, c.target) : t;
+    if (!(c.days === 0)) push(cNext, { id: 'clean', icon: 'sparkles', title: 'Pulizia', sub: c.last ? `ultima ${Utils.relDays(c.days)}` : '', level: 'info', action: { kind: 'clean' } });
+    for (const m of L().med) {
+      const st = medState(m);
+      if (!st.active && !(m.dataInizio > t)) continue;
+      let d = st.next < t ? t : st.next, i = 0;
+      while (d <= end && (!m.dataFine || d <= m.dataFine) && i < 20) {
+        if (!(d === t && st.doneToday)) push(d, { id: `med-${m.id}-${i}`, icon: 'pill', title: `Dose: ${m.farmaco}`, sub: m.dose || '', level: 'warn', action: d === t ? { kind: 'dose', id: m.id } : null });
+        d = addDaysISO(d, st.every); i++;
+      }
+    }
+    L().vet.filter(v => v.controllo && v.controllo >= t && v.controllo <= end).forEach(v => push(v.controllo, { id: 'vet-' + v.id, icon: 'vet', title: 'Controllo dal veterinario', sub: v.motivo || '', level: 'warn' }));
+    const lw = L().growth.find(g => g.peso !== null);
+    const wDue = lw ? addDaysISO(lw.data, 14) : t;
+    if (!(lw && Utils.daysSince(lw.data) === 0)) push(wDue, { id: 'weigh', icon: 'scale', title: 'Pesata', sub: lw ? `ultima ${Utils.fmtNum(lw.peso, 'g')}` : '', level: 'info', action: { kind: 'form', type: 'growth' } });
+    if (brum.start && brum.start > t) push(brum.start, { id: 'brum-s', icon: 'moon', title: 'Inizio brumazione', level: 'info' });
+    if (brum.end && brum.end >= t) push(brum.end, { id: 'brum-e', icon: 'sun', title: 'Fine brumazione', level: 'info' });
+    const pr = predictions();
+    if (pr.shed.ok && pr.shed.date <= end) push(pr.shed.date, { id: 'p-shed', icon: 'shed', title: 'Muta prevista', sub: `tra il ${Utils.fmtDateShort(pr.shed.from)} e il ${Utils.fmtDateShort(pr.shed.to)}`, level: 'info', forecast: true });
+    if (pr.stock.ok && pr.stock.date <= end) push(pr.stock.date, { id: 'p-stock', icon: 'box', title: pr.stock.out ? `${pr.stock.preda}: congelatore vuoto` : `Ultimo ${pr.stock.preda} nel congelatore`, sub: 'compra le prede', level: 'warn', forecast: true });
+    if (pr.prey.ok && !pr.prey.already && pr.prey.date <= end) push(pr.prey.date, { id: 'p-prey', icon: 'mouse', title: `Passa a ${pr.prey.next}`, sub: 'taglia consigliata dal peso previsto', level: 'info', forecast: true });
+
+    const out = [];
+    for (let i = 0; i < days; i++) {
+      const d = addDaysISO(t, i);
+      const list = items.filter(x => x.date === d).sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || (b.late || 0) - (a.late || 0) || ({ warn: 0, info: 1 }[a.level] ?? 2) - ({ warn: 0, info: 1 }[b.level] ?? 2));
+      out.push({ date: d, items: list });
+    }
+    return out;
+  }
+
+  return { predictions, agenda, weightModel, preyForWeight, stockState, expenseSummary, lifeEvents, currentWeight, currentLength, weightAt, ratio, ratioStatus, ratioLabel, RANGES, ENV_KEYS, range, evalParam, envNow, shedState, inShedOn, shedHumidity, feedingState, suggestedInterval, targetInterval, refusals, lastMealTemplate, waterState, cleanState, weightTrend, weightLoss, expectedWeight, monthsAt, brumState, medState, activeMeds, openSymptoms, alerts, todayTasks, headline, achievements };
 })();
 
 /* ==========================================================================
@@ -3878,10 +4150,11 @@ const Actions = (() => {
     const tile = t => { const d = Schema.LOGS[t]; return `<button class="add-tile" data-add="${t}"><span class="t-ico" style="color:${d.color}">${I(d.icon)}</span><b>${d.label}</b><small>${d.desc}</small></button>`; };
     const last = Logic.lastMealTemplate();
     const body = `${last ? `<button class="quick-meal" data-meal><span class="t-ico">${I('zap')}</span><span><b>Ha mangiato come l'ultima volta</b><small>${Utils.esc(last.preda)}${Utils.num(last.pesoPreda) !== null ? ' · ' + Utils.fmtNum(last.pesoPreda, 'g') : ''} · oggi</small></span></button>` : ''}
+      <div class="add-group">Più voci insieme</div><div class="add-grid add-grid-2"><button class="add-tile" data-round><span class="t-ico" style="color:var(--accent)">${I('route')}</span><b>Giro di controllo</b><small>Clima, acqua, pulizia e peso</small></button><button class="add-tile" data-cmd><span class="t-ico" style="color:#a78bfa">${I('command')}</span><b>Scrivi</b><small>Es. "hopper 6 g ieri"</small></button></div>
       <div class="add-group">Routine</div><div class="add-grid">${['feeding', 'env', 'growth', 'shed', 'maintenance', 'handling'].map(tile).join('')}</div>
       <div class="add-group">Salute</div><div class="add-grid">${['waste', 'symptom', 'vet', 'med'].map(tile).join('')}<button class="add-tile" data-photo-add><span class="t-ico" style="color:#f472b6">${I('camera')}</span><b>Foto</b><small>Diario fotografico</small></button></div>
       <div class="add-group">Casa</div><div class="add-grid">${['stock', 'expense'].map(tile).join('')}</div>
-      <p class="faint small desktop-only" style="margin-top:14px">Suggerimento: premi <kbd>N</kbd> per aprire questo pannello e <kbd>/</kbd> per cercare.</p>`;
+      <p class="faint small desktop-only" style="margin-top:14px">Suggerimento: <kbd>N</kbd> apre questo pannello, <kbd>/</kbd> cerca, <kbd>Ctrl</kbd>+<kbd>K</kbd> apre il comando rapido.</p>`;
     Overlay.open({ title: 'Cosa vuoi registrare?', body });
   }
 
@@ -4010,7 +4283,17 @@ const Actions = (() => {
     Toast.show(n ? `Tolte ${Utils.plural(n, 'lettura', 'letture')} vecchie` : 'Nessuna lettura da togliere', n ? 'ok' : 'info', { duration: 6000, action: n ? undoAction() : null });
   }
 
-  return { remove, quickWater, quickClean, quickMeal, giveDose, runAlertAction, openAddSheet, exportBackup, shareBackup, canShare, importBackup, loadDemo, clearAll, restoreSnapshot, undoAction, saveFile, compactEnv };
+  /** Sposta il prossimo pasto a un altro giorno (vale solo fino al pasto successivo) */
+  function moveMeal(date) {
+    const last = Store.get().logs.feeding.find(f => f.esito === 'Mangiato');
+    if (!Utils.isValidDate(date) || date < Utils.todayISO()) { Toast.show('Scegli oggi o un giorno futuro', 'warn'); return false; }
+    const fs = Logic.feedingState();
+    if (fs.next === date) return false;
+    Store.updateProfile({ pastoSpostato: `${last ? last.data : ''}|${date}` }, 'Pasto spostato');
+    Toast.show(`Pasto spostato a ${Utils.weekday(date)} ${Utils.fmtDateShort(date)}`, 'ok', { action: undoAction() });
+    return true;
+  }
+  return { moveMeal, remove, quickWater, quickClean, quickMeal, giveDose, runAlertAction, openAddSheet, exportBackup, shareBackup, canShare, importBackup, loadDemo, clearAll, restoreSnapshot, undoAction, saveFile, compactEnv };
 })();
 
 /* ==========================================================================
@@ -4414,7 +4697,7 @@ const Terrarium = (() => {
     const toMin = t => { const n = Utils.normTime(t); return n ? +n.slice(0, 2) * 60 + +n.slice(3) : null; };
     const on = toMin(p.luceOn), off = toMin(p.luceOff);
     if (on === null || off === null || on === off) return 'day';
-    const d = new Date(), m = d.getHours() * 60 + d.getMinutes();
+    const d = Utils.now(), m = d.getHours() * 60 + d.getMinutes();
     const isOn = on < off ? (m >= on && m < off) : (m >= on || m < off);
     if (!isOn) return 'night';
     if (Math.abs(m - on) < 45) return 'dawn';
@@ -4424,7 +4707,7 @@ const Terrarium = (() => {
   const PHASE_LABEL = { day: 'Luce accesa', dawn: 'Alba', dusk: 'Tramonto', night: 'Notte · luce spenta' };
   function tick() {
     const w = document.getElementById('terraWrap');
-    if (w) { const ph = phase(); if (w.dataset.phase !== ph) { w.dataset.phase = ph; const l = document.getElementById('terraPhase'); if (l) l.innerHTML = phaseBadge(ph); } }
+    if (w && !(typeof Views !== 'undefined' && Views.ttOffset)) { const ph = phase(); if (w.dataset.phase !== ph) { w.dataset.phase = ph; const l = document.getElementById('terraPhase'); if (l) l.innerHTML = phaseBadge(ph); } }
   }
   const phaseBadge = ph => `${I(ph === 'night' ? 'moon' : 'sun')} ${PHASE_LABEL[ph]}`;
   setInterval(tick, 60000);
@@ -5019,7 +5302,7 @@ const Search = (() => {
       default: return '';
     }
   };
-  function open() {
+  function open(q = '') {
     const modal = Overlay.open({ title: `${I('search')} Cerca`, subtitle: 'In tutti i registri: prede, note, mesi, valori…', body: `<div class="search"><input class="input" type="search" id="gSearch" placeholder="Es. topo adulto, rifiutato, ottobre 2026" autocomplete="off"></div><div id="gResults" class="g-results"></div>` });
     const inp = modal.querySelector('#gSearch'), res = modal.querySelector('#gResults');
     const idx = index();
@@ -5033,6 +5316,7 @@ const Search = (() => {
       }).join('') : '<div class="empty"><b>Nessun risultato</b><p>Prova con un\'altra parola o un mese, per esempio "marzo".</p></div>';
     };
     inp.addEventListener('input', run);
+    if (typeof q === 'string' && q) inp.value = q;
     run();
     setTimeout(() => inp.focus(), 60);
   }
@@ -5432,6 +5716,7 @@ const Views = (() => {
         ${done.map(t => `<div class="task done"><span class="task-ico">${I('check')}</span><div class="task-txt"><b>${Utils.esc(t.title)}</b><small>${Utils.esc(t.sub)}</small></div></div>`).join('')}
         ${!pending.length ? `<p class="small c-ok" style="padding:4px 2px">${I('ok')} Per oggi è tutto fatto.</p>` : ''}
       </div>
+      <button class="today-more" data-nav="agenda"><span>${I('calendar')} Agenda dei prossimi giorni</span>${I('chevron')}</button>
     </div>`;
   }
 
@@ -5484,7 +5769,7 @@ const Views = (() => {
       ? kpi({ key: 'weight', label: `${I('scale')} Peso`, status: loss && loss.pct >= 10 ? 'bad' : trend && trend.diff < 0 ? 'warn' : 'ok', value: `${count(weight, 'k-weight', 1)}<small>g</small>${miniSpark(st.logs.growth)}`, sub: trend ? `<b class="c-${trend.diff >= 0 ? 'ok' : 'warn'}">${trend.diff >= 0 ? '+' : ''}${Utils.fmtNum(trend.diff, 'g')}</b> in ${trend.days} giorni · ≈ ${Utils.fmtNum(trend.perMonth, 'g')}/mese` : 'Aggiungi altre misurazioni per il trend' })
       : kpi({ key: 'weight', label: `${I('scale')} Peso`, status: 'neutral', value: '—', sub: 'Nessuna misurazione' });
 
-    const quick = [['feeding', 'mouse', 'Pasto'], ['env', 'thermo', 'Clima'], ['water', 'drop', 'Acqua'], ['growth', 'scale', 'Peso'], ['shed', 'shed', 'Muta'], ['waste', 'waste', 'Feci']];
+    const quick = [['round', 'route', 'Giro'], ['feeding', 'mouse', 'Pasto'], ['env', 'thermo', 'Clima'], ['water', 'drop', 'Acqua'], ['growth', 'scale', 'Peso'], ['waste', 'waste', 'Feci']];
 
     Terrarium.closePop();
     view('#view-dashboard').html = `
@@ -5502,7 +5787,8 @@ const Views = (() => {
             </div>
             <button class="status-pill" data-scroll="alertsCard">${statusPill}</button>
           </div>
-          ${Terrarium.html()}
+          <div id="terraSlot">${terraHTML()}</div>
+          ${ttBar()}
         </div>
         <div class="jungle-side">
           ${todayCard()}
@@ -5510,7 +5796,7 @@ const Views = (() => {
         </div>
       </div>
       ${welcome}
-      <div class="quick mt">${quick.map(([t, i, l]) => `<button class="quick-btn" ${t === 'water' ? 'data-water' : `data-add="${t}"`}><span class="q-ico">${I(i)}</span><span>${l}</span></button>`).join('')}</div>
+      <div class="quick mt">${quick.map(([t, i, l]) => `<button class="quick-btn" ${t === 'water' ? 'data-water' : t === 'round' ? 'data-round' : `data-add="${t}"`}><span class="q-ico">${I(i)}</span><span>${l}</span></button>`).join('')}</div>
       <div class="grid g-2 mt">
         <div class="card" id="alertsCard"><div class="card-head"><h2>Avvisi</h2>${nBad ? `<span class="badge b-bad">${nBad} critici</span>` : nWarn ? `<span class="badge b-warn">${nWarn} avvisi</span>` : '<span class="badge b-ok">Nessun problema</span>'}</div>${alertsHTML(al)}</div>
         <div class="card"><div class="card-head"><h2>Clima del terrario</h2><button class="btn btn-sm" data-add="env">${I('plus')} Lettura</button></div>${gauges()}</div>
@@ -5587,10 +5873,17 @@ const Views = (() => {
       const g = Charts.filterByRange('growth', [...S().logs.growth].reverse(), 'data');
       const refs = g.map(x => Logic.expectedWeight(Logic.monthsAt(x.data)));
       const hasRef = refs.some(Boolean);
-      Charts.line('growth', $('#chart-growth'), g.map(x => Utils.fmtAxis(x.data)), [
-        { label: 'Peso', data: g.map(x => x.peso), color: '#fbbf24', unit: 'g', fillAlpha: .25 },
-        ...(hasRef ? [{ label: 'Atteso min', data: refs.map(r => r ? r.min : null), color: '#64748b', unit: 'g', dash: true, fill: false }, { label: 'Atteso max', data: refs.map(r => r ? r.max : null), color: '#64748b', unit: 'g', dash: true, fill: false }] : []),
-        { label: 'Lunghezza', data: g.map(x => x.lunghezza), color: '#4ade80', axis: 'y1', unit: 'cm', fillAlpha: .08 }
+      // Previsione: retta dei pesi recenti prolungata di 30, 60 e 90 giorni
+      const wp = Logic.predictions().weight, lastW = [...g].reverse().find(x => x.peso !== null);
+      const fut = wp.ok && lastW && g.length ? [30, 60, 90] : [];
+      const futLabels = fut.map(d => Utils.fmtAxis(Utils.toISODate(Utils.addDays(Utils.parse(Utils.todayISO()), d))));
+      const pad = a => [...a, ...fut.map(() => null)];
+      const fc = fut.length ? [...g.map(x => x === lastW ? x.peso : null), ...fut.map(d => Utils.round(wp.model.at(d), 1))] : null;
+      Charts.line('growth', $('#chart-growth'), [...g.map(x => Utils.fmtAxis(x.data)), ...futLabels], [
+        { label: 'Peso', data: pad(g.map(x => x.peso)), color: '#fbbf24', unit: 'g', fillAlpha: .25 },
+        ...(fc ? [{ label: 'Previsione', data: fc, color: '#ffb347', unit: 'g', dash: true, fill: false }] : []),
+        ...(hasRef ? [{ label: 'Atteso min', data: pad(refs.map(r => r ? r.min : null)), color: '#64748b', unit: 'g', dash: true, fill: false }, { label: 'Atteso max', data: pad(refs.map(r => r ? r.max : null)), color: '#64748b', unit: 'g', dash: true, fill: false }] : []),
+        { label: 'Lunghezza', data: pad(g.map(x => x.lunghezza)), color: '#4ade80', axis: 'y1', unit: 'cm', fillAlpha: .08 }
       ], { yTitle: 'g', y1Title: 'cm', emptyMsg: 'Registra peso e lunghezza per la curva di crescita.', addType: 'growth' });
     } else Charts.destroy('growth');
   }
@@ -5840,6 +6133,109 @@ const Views = (() => {
     Dom.morph(host, list.length ? list.map(x => `<div class="snap"><span>${I('history')}</span><div><b>${Utils.toDMY(x.at.slice(0, 10))} ${new Date(x.at).toTimeString().slice(0, 5)}</b><small>${Utils.esc(x.reason)} · ${Utils.plural(x.count, 'voce', 'voci')}${x.name ? ' · ' + Utils.esc(x.name) : ''}</small></div><button class="btn btn-sm" data-snap="${x.id}">Ripristina</button></div>`).join('') : '<p class="faint small">Nessuna copia ancora.</p>');
   }
 
+  /* ---------- Previsioni (riquadri) ---------- */
+  function forecastCard() {
+    const pr = Logic.predictions();
+    const tile = (icon, label, value, sub, ok) => `<div class="fc-tile${ok ? '' : ' fc-off'}"><span class="fc-ico">${I(icon)}</span><div><span class="kpi-label">${label}</span><b>${value}</b><small>${sub}</small></div></div>`;
+    const s = pr.shed, w = pr.weight, y = pr.prey, k = pr.stock;
+    return `<div class="card fc-card"><div class="card-head"><h2>${I('sparkles')} Previsioni</h2><span class="faint small">dai tuoi dati</span></div>
+      <div class="fc-grid">
+        ${tile('shed', 'Prossima muta', s.ok ? (s.late ? 'Da un giorno all\'altro' : `Verso il ${Utils.fmtDateShort(s.date)}`) : '—', s.ok ? `tra il ${Utils.fmtDateShort(s.from)} e il ${Utils.fmtDateShort(s.to)} · ogni ~${s.every} giorni (${s.basis} mute)${s.hint ? ' · ' + s.hint : ''}` : Utils.esc(s.text), s.ok)}
+        ${tile('scale', 'Peso tra 30 giorni', w.ok ? `≈ ${Utils.fmtNum(w.w30, 'g')} <span class="fc-pm">± ${Utils.fmtNum(w.b30)}</span>` : '—', w.ok ? `tra 90 giorni ≈ ${Utils.fmtNum(w.w90, 'g')} ± ${Utils.fmtNum(w.b90)} · ${w.perMonth >= 0 ? '+' : ''}${Utils.fmtNum(w.perMonth, 'g')}/mese (${w.basis} pesate)` : Utils.esc(w.text), w.ok)}
+        ${tile('mouse', 'Taglia della preda', y.ok ? `${Utils.esc(y.cur)} → ${Utils.esc(y.next)}` : '—', y.ok ? (y.already ? 'già adesso, secondo il peso attuale' : `dal ${Utils.fmtDate(y.date)} circa`) : Utils.esc(y.text), y.ok)}
+        ${tile('box', 'Scorte del congelatore', k.ok ? (k.out ? `${Utils.esc(k.preda)} finiti` : `Fino al ${Utils.fmtDateShort(k.date)}`) : '—', k.ok ? (k.out ? 'compra le prede prima del prossimo pasto' : `${Utils.plural(k.left, 'preda rimasta', 'prede rimaste')} (${Utils.esc(k.preda)})`) : Utils.esc(k.text), k.ok)}
+      </div></div>`;
+  }
+
+  /* ---------- Agenda ---------- */
+  let agendaItems = new Map();
+  function agenda() {
+    const days = Logic.agenda(14), t = Utils.todayISO();
+    agendaItems = new Map();
+    const head = d => { const n = Utils.daysBetween(t, d); return `${n === 0 ? 'Oggi' : n === 1 ? 'Domani' : Utils.cap(Utils.weekday(d))} <span>${Utils.fmtDateShort(d)}</span>`; };
+    const item = (x, d) => {
+      agendaItems.set(x.id, x);
+      const canDo = x.action && !x.done && d === t;
+      return `<div class="ag-item${x.done ? ' done' : ''}${x.faint ? ' faint' : ''}${x.forecast ? ' fc' : ''} l-${x.level || 'none'}${Store.isRecent(x.id) ? ' is-new' : ''}" data-key="ag-${Utils.esc(x.id)}" data-ag="${Utils.esc(x.id)}"${x.movable ? ' draggable="true" data-movable' : ''}${canDo ? ' data-swipe' : ''}>
+        <span class="ag-ico">${I(x.done ? 'check' : x.icon)}</span>
+        <div class="ag-txt"><b>${Utils.esc(x.title)}</b>${x.late || x.sub ? `<small>${x.late ? `<span class="c-warn">in ritardo di ${Utils.plural(x.late, 'giorno', 'giorni')}</span>${x.sub ? ' · ' : ''}` : ''}${Utils.esc(x.sub || '')}</small>` : ''}</div>
+        <div class="ag-act">${x.movable ? `<button class="btn btn-sm btn-ghost" data-ag-move aria-label="Sposta il pasto">${I('calendar')}<span class="hide-xs">Sposta</span></button>` : ''}${canDo ? `<button class="btn btn-sm" data-ag-do="${Utils.esc(x.id)}">${I('check')} Fatto</button>` : ''}</div>
+      </div>`;
+    };
+    const total = days.reduce((a, d) => a + d.items.filter(x => !x.done).length, 0);
+    view('#view-agenda').html = `
+      ${forecastCard()}
+      <div class="row-between mt ag-top"><h2>Prossimi 14 giorni <span class="faint" style="font-weight:500">· ${Utils.plural(total, 'cosa da fare', 'cose da fare')}</span></h2>
+        <button class="btn btn-sm" data-round>${I('route')} Giro di controllo</button></div>
+      <p class="faint small ag-hint"><span class="desktop-only">Trascina il pasto su un altro giorno per spostarlo.</span><span class="mobile-only">Scorri a destra una voce di oggi per segnarla fatta.</span></p>
+      <div class="ag-days">${days.map((d, i) => `<section class="ag-day${i === 0 ? ' today' : ''}${i > 0 && d.items.length === 0 ? ' empty-day' : ''}" data-key="day-${d.date}" data-day="${d.date}">
+          <h3 class="ag-head">${head(d.date)}</h3>
+          <div class="ag-list">${d.items.length ? d.items.map(x => item(x, d.date)).join('') : '<p class="faint small ag-empty">Niente in programma</p>'}</div>
+        </section>`).join('')}</div>`;
+  }
+
+  /* ---------- Macchina del tempo del terrario ---------- */
+  let ttOffset = 0;
+  /** Stato dei registri com'era alla fine del giorno indicato */
+  function stateAt(day) {
+    const st = S(), end = `${day}T23:59`;
+    const logs = {};
+    for (const t of Schema.LOG_TYPES) {
+      const k = Schema.LOGS[t].dateKey;
+      logs[t] = st.logs[t].filter(e => (e[k] || '') <= (k === 'datetime' ? end : day));
+    }
+    logs.shed = logs.shed.map(s => s.dataFine && s.dataFine > day ? { ...s, dataFine: '', esito: 'In corso' } : s);
+    return { ...st, logs };
+  }
+  const ttRange = () => {
+    const firsts = Schema.LOG_TYPES.map(t => { const a = S().logs[t]; return a.length ? (a[a.length - 1][Schema.LOGS[t].dateKey] || '').slice(0, 10) : null; }).filter(Boolean).sort();
+    return firsts.length ? Utils.clamp(Utils.daysSince(firsts[0]), 0, 365) : 0;
+  };
+  const ttDay = () => Utils.toISODate(Utils.addDays(Utils.parse(Utils.todayISO()), -ttOffset));
+  function terraHTML() {
+    if (!ttOffset) return Terrarium.html();
+    const day = ttDay();
+    return Store.peek(stateAt(day), () => Utils.at(`${day}T13:00`, () => Terrarium.html()));
+  }
+  function ttLabel() {
+    if (!ttOffset) return '<b>Oggi</b><span>Scorri per vedere com\'era il terrario nei giorni passati</span>';
+    const day = ttDay();
+    const ev = [];
+    for (const t of Schema.LOG_TYPES) {
+      const def = Schema.LOGS[t];
+      S().logs[t].filter(e => (e[def.dateKey] || '').slice(0, 10) === day).forEach(e => ev.push(t === 'feeding' ? `Pasto ${e.esito === 'Mangiato' ? '' : '(' + e.esito.toLowerCase() + ') '}${e.preda}` : t === 'maintenance' ? e.tipo : t === 'shed' ? (e.dataInizio === day ? 'Inizio muta' : 'Muta') : def.label));
+    }
+    S().logs.shed.filter(s => s.dataFine === day).forEach(() => ev.push('Muta completata'));
+    return `<b>${Utils.cap(Utils.weekday(day))} ${Utils.fmtDate(day)}</b><span>${ev.length ? Utils.esc([...new Set(ev)].slice(0, 4).join(' · ')) : 'nessuna registrazione quel giorno'}</span>`;
+  }
+  function ttBar() {
+    const max = ttRange();
+    if (max < 2) return '';
+    return `<div class="tt-bar${ttOffset ? ' on' : ''}" id="ttBar">
+      <span class="tt-ico">${I('rewind')}</span>
+      <input type="range" class="tt-range" id="ttRange" min="${-max}" max="0" step="1" value="${-ttOffset}" aria-label="Giorno da mostrare nel terrario" aria-valuetext="${ttOffset ? Utils.fmtDate(ttDay()) : 'oggi'}">
+      <div class="tt-label" id="ttLabel" aria-live="polite">${ttLabel()}</div>
+      <button class="btn btn-sm btn-ghost${ttOffset ? '' : ' hidden'}" data-tt-now>Oggi</button>
+    </div>`;
+  }
+  let ttFrame = 0;
+  function setTimeTravel(offset) {
+    ttOffset = Math.max(0, Math.round(offset));
+    cancelAnimationFrame(ttFrame);
+    ttFrame = requestAnimationFrame(() => {
+      Terrarium.closePop();
+      Dom.morph(document.getElementById('terraSlot'), terraHTML());
+      const lab = document.getElementById('ttLabel'); if (lab) lab.innerHTML = ttLabel();
+      const bar = document.getElementById('ttBar');
+      if (bar) {
+        bar.classList.toggle('on', !!ttOffset);
+        bar.querySelector('[data-tt-now]').classList.toggle('hidden', !ttOffset);
+        const r = bar.querySelector('#ttRange'); if (+r.value !== -ttOffset) r.value = -ttOffset;
+        r.setAttribute('aria-valuetext', ttOffset ? Utils.fmtDate(ttDay()) : 'oggi');
+      }
+    });
+  }
+
   function morphPreviewHTML(value) {
     const look = Morph.resolve(value);
     return `${Snake.preview(look, 'set')}<div class="row" style="flex-wrap:wrap;margin-top:4px"><span class="badge b-info">${Utils.esc(look.label)}</span>${look.custom ? '<span class="badge b-neutral">Personalizzato</span>' : ''}</div><p>${Utils.esc(look.desc)}</p>`;
@@ -5984,7 +6380,208 @@ const Views = (() => {
     void sections;
   }
 
-  return { gestione, storia, dashboard, clima, alimentazione, cura, salute, impostazioni, saveSettings, morphPreviewHTML, fillPhotos, togglePhoto, photoSel, tabs, getAlert: i => lastAlerts[i], getTask: i => lastTasks[i] };
+  return { agenda, forecastCard, setTimeTravel, get ttOffset() { return ttOffset; }, getAgendaItem: id => agendaItems.get(id), gestione, storia, dashboard, clima, alimentazione, cura, salute, impostazioni, saveSettings, morphPreviewHTML, fillPhotos, togglePhoto, photoSel, tabs, getAlert: i => lastAlerts[i], getTask: i => lastTasks[i] };
+})();
+
+/* ==========================================================================
+   Round — giro di controllo: clima, acqua, pulizia, feci e peso in un pannello
+   ========================================================================== */
+const Round = (() => {
+  const sw = (name, label, sub, on) => `<label class="rd-row"><span class="rd-txt"><b>${label}</b><small>${sub}</small></span>
+      <span class="switch"><input type="checkbox" name="${name}" ${on ? 'checked' : ''}><span></span></span></label>`;
+  const chips = (name, opts, val) => `<div class="chips" role="radiogroup">${opts.map(o => `<label class="chip chip-sm"><input type="radio" name="${name}" value="${Utils.esc(o)}" ${o === val ? 'checked' : ''}>${Utils.esc(o)}</label>`).join('')}</div>`;
+  function open() {
+    const now = Logic.envNow(), w = Logic.waterState(), c = Logic.cleanState();
+    const lastW = Logic.currentWeight();
+    const val = k => now[k] ? now[k].v : '';
+    const num = (name, label, unit, v, step = '0.1') => `<label class="field rd-num"><span class="field-label">${label}</span><div class="input-wrap"><input class="input" name="${name}" type="number" inputmode="decimal" step="${step}" value="${v}"><span class="unit">${unit}</span></div></label>`;
+    const body = `<form id="roundForm" novalidate>
+      <p class="faint small" style="margin-bottom:12px">Controlla e correggi i valori: viene salvato tutto insieme, con un solo "Annulla".</p>
+      <div class="rd-sec">${sw('env', `${I('thermo')} Temperature e umidità`, now.latest ? `ultima lettura ${Utils.relTime(now.latest.datetime)}` : 'prima lettura', true)}
+        <div class="rd-grid">${num('tempCalda', 'Zona calda', '°C', val('tempCalda'))}${num('tempFredda', 'Zona fredda', '°C', val('tempFredda'))}${num('umidita', 'Umidità', '%', val('umidita'), '1')}</div></div>
+      <div class="rd-sec">${sw('water', `${I('drop')} Acqua cambiata`, w.days === 0 ? 'già registrata oggi' : w.last ? `ultimo cambio ${Utils.relDays(w.days)}` : 'mai registrata', w.days !== 0 && (w.remaining === null || w.remaining <= 0))}</div>
+      <div class="rd-sec">${sw('clean', `${I('sparkles')} Pulizia veloce`, c.days === 0 ? 'già registrata oggi' : c.last ? `ultima ${Utils.relDays(c.days)}` : 'mai registrata', c.days !== 0 && (c.remaining === null || c.remaining <= 0))}</div>
+      <div class="rd-sec">${sw('waste', `${I('waste')} Feci trovate`, 'tipo e aspetto', false)}
+        <div class="rd-more" data-rd-more="waste">${chips('tipo', Schema.OPTIONS.tipoEvac, Schema.OPTIONS.tipoEvac[0])}${chips('aspetto', Schema.OPTIONS.aspetto, 'Normale')}</div></div>
+      <div class="rd-sec">${sw('growth', `${I('scale')} Pesata`, lastW !== null ? `ultima ${Utils.fmtNum(lastW, 'g')}` : 'facoltativa', false)}
+        <div class="rd-more" data-rd-more="growth"><div class="rd-grid">${num('peso', 'Peso', 'g', '', '0.1')}</div></div></div>
+    </form>`;
+    const footer = `<button class="btn btn-ghost" data-rd-cancel>Annulla</button><button class="btn btn-primary" data-rd-save>${I('check')} Salva il giro</button>`;
+    const modal = Overlay.open({ title: `${I('route')} Giro di controllo`, subtitle: Utils.cap(new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })), body, footer });
+    const form = modal.querySelector('#roundForm');
+    const sync = () => form.querySelectorAll('[data-rd-more]').forEach(m => m.classList.toggle('open', form.elements[m.dataset.rdMore].checked));
+    form.addEventListener('change', sync); sync();
+    modal.querySelector('[data-rd-cancel]').addEventListener('click', () => Overlay.close());
+    modal.querySelector('[data-rd-save]').addEventListener('click', e => save(form, e.currentTarget));
+    form.addEventListener('submit', e => { e.preventDefault(); save(form); });
+  }
+  function save(form) {
+    const f = form.elements, t = Utils.todayISO(), list = [];
+    const n = name => Utils.num(f[name].value);
+    if (f.env.checked) {
+      const d = { datetime: Utils.nowLocal(), tempCalda: n('tempCalda'), tempFredda: n('tempFredda'), umidita: n('umidita'), note: 'Giro di controllo' };
+      if ([d.tempCalda, d.tempFredda, d.umidita].some(v => v !== null)) list.push({ type: 'env', data: d });
+    }
+    if (f.water.checked) list.push({ type: 'maintenance', data: { data: t, tipo: 'Cambio acqua', note: '' } });
+    if (f.clean.checked) list.push({ type: 'maintenance', data: { data: t, tipo: 'Spot cleaning', note: '' } });
+    if (f.waste.checked) list.push({ type: 'waste', data: { data: t, tipo: (form.querySelector('[name="tipo"]:checked') || {}).value, aspetto: (form.querySelector('[name="aspetto"]:checked') || {}).value, note: '' } });
+    if (f.growth.checked) {
+      if (n('peso') === null) { Toast.show('Inserisci il peso o togli la pesata', 'warn'); f.peso.focus(); return; }
+      list.push({ type: 'growth', data: { data: t, peso: n('peso'), lunghezza: null, note: '' } });
+    }
+    if (!list.length) { Toast.show('Niente da salvare: attiva almeno una voce', 'info'); return; }
+    const saved = Store.addBatch(list);
+    if (!saved.length) { Toast.show('Valori non validi: giro non salvato', 'bad'); return; }
+    Overlay.close();
+    Toast.show(`Giro salvato: ${Utils.plural(saved.length, 'voce', 'voci')}`, 'ok', { action: Actions.undoAction() });
+  }
+  return { open };
+})();
+
+/* ==========================================================================
+   Cmd — comando rapido: una frase in italiano diventa una registrazione
+   Es. "pasto hopper 6 g ieri", "30,5 gradi 55%", "acqua", "peso 58", "vai a clima"
+   ========================================================================== */
+const Cmd = (() => {
+  const EXAMPLES = ['ha mangiato hopper 6 g', 'calda 31 fredda 24 umidità 55%', 'acqua', 'peso 58 g', 'feci normali', 'inizio muta', 'vai a agenda'];
+  const WD = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+  const numRe = '(\\d+(?:[.,]\\d+)?)';
+  const toNum = s => Utils.num(s);
+
+  /** Data detta a parole: oggi, ieri, l'altro ieri, lunedì, 12/11 */
+  function whenOf(t) {
+    const today = Utils.parse(Utils.todayISO());
+    let d = null;
+    if (/l'?altro\s*ieri|altroieri/.test(t)) d = Utils.addDays(today, -2);
+    else if (/\bieri\b/.test(t)) d = Utils.addDays(today, -1);
+    else if (/\boggi\b|stamattina|stasera/.test(t)) d = today;
+    const m = t.match(/\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b/);
+    if (!d && m) {
+      let y = m[3] ? +m[3] : today.getFullYear(); if (y < 100) y += 2000;
+      const c = new Date(y, +m[2] - 1, +m[1]);
+      if (c.getMonth() === +m[2] - 1) d = !m[3] && c > today ? new Date(y - 1, +m[2] - 1, +m[1]) : c;
+    }
+    if (!d) { const i = WD.findIndex(w => new RegExp('\\b' + w.replace('ì', '[iì]') + '\\b').test(t)); if (i >= 0) { d = new Date(today); while (d.getDay() !== i || d >= today) d = Utils.addDays(d, -1); } }
+    return d ? Utils.toISODate(d) : Utils.todayISO();
+  }
+  const timeOf = t => { const m = t.match(/\b(?:alle\s+)?(\d{1,2})[:.](\d{2})\b/) || t.match(/\balle\s+(\d{1,2})\b/); return m && +m[1] < 24 ? `${Utils.pad(+m[1])}:${m[2] || '00'}` : null; };
+
+  /** Interpreta il testo: { kind: 'add'|'update'|'nav'|'search'|'round', ... } oppure null */
+  function parse(raw) {
+    const t = ` ${String(raw || '').toLowerCase().replace(/\s+/g, ' ').trim()} `;
+    if (t.trim().length < 2) return null;
+    const date = whenOf(t);
+    const views = Router.VIEWS;
+    const nav = t.match(/^\s*(?:vai\s+(?:a|al|alla|alle|in)|apri)\s+(.+?)\s*$/);
+    if (nav) { const v = views.find(x => [x.id, x.label, x.short, x.mobile].filter(Boolean).some(n => n.toLowerCase().includes(nav[1]) || nav[1].includes(n.toLowerCase().split(' ')[0]))); if (v) return { kind: 'nav', to: v.id, label: `Vai a ${v.label}` }; }
+    const se = t.match(/^\s*cerca\s+(.+?)\s*$/); if (se) return { kind: 'search', q: se[1], label: `Cerca "${se[1]}"` };
+    if (/\bgiro\b/.test(t)) return { kind: 'round', label: 'Apri il giro di controllo' };
+
+    const grams = t.match(new RegExp(numRe + '\\s*(?:g|gr|grammi)\\b'));
+    const cm = t.match(new RegExp(numRe + '\\s*(?:cm|centimetri)\\b'));
+    // Pasto
+    const preyWords = { pinky: 'Pinky', fuzzy: 'Fuzzy', hopper: 'Hopper', 'topo adulto': 'Topo adulto', adulto: 'Topo adulto' };
+    const prey = Object.keys(preyWords).find(k => t.includes(k));
+    if (/pasto|mangiat|mangia\b|rifiut|rigurgit|\btopo\b/.test(t) || prey) {
+      const last = Logic.lastMealTemplate() || {};
+      const esito = /rigurgit/.test(t) ? 'Rigurgitato' : /rifiut|non ha mangiato/.test(t) ? 'Rifiutato' : 'Mangiato';
+      const data = { data: date, preda: prey ? preyWords[prey] : (last.preda || 'Altro'), pesoPreda: grams ? toNum(grams[1]) : (prey && prey !== (last.preda || '').toLowerCase() ? null : Utils.num(last.pesoPreda)), statoPreda: /\bviv[oa]\b/.test(t) ? 'Vivo' : (last.statoPreda || 'Decongelato'), esito, note: '' };
+      data.rapporto = Logic.ratio(data.pesoPreda, Logic.weightAt(data.data));
+      return { kind: 'add', type: 'feeding', data };
+    }
+    // Muta
+    if (/muta|opac|occhi blu/.test(t)) {
+      const open = Store.get().logs.shed.find(s => s.esito === 'In corso');
+      if (/complet|finit|fatta|cambiat|conclus/.test(t) && open) return { kind: 'update', type: 'shed', id: open.id, data: { esito: /pezzi|incomplet/.test(t) ? 'Incompleta / a pezzi' : 'Completa', dataFine: date }, label: 'Muta completata' };
+      if (/complet|finit|fatta|cambiat|conclus/.test(t)) return { kind: 'add', type: 'shed', data: { dataInizio: date, dataFine: date, esito: /pezzi|incomplet/.test(t) ? 'Incompleta / a pezzi' : 'Completa', occhi: '', note: '' } };
+      return { kind: 'add', type: 'shed', data: { dataInizio: date, dataFine: '', esito: 'In corso', occhi: '', note: '' } };
+    }
+    // Feci e urati
+    if (/feci|cacca|urat|evacu/.test(t)) {
+      const tipo = /solo urat/.test(t) ? 'Solo urati' : /solo feci/.test(t) ? 'Solo feci' : 'Feci e urati';
+      const aspetto = /molli|liquid|diarr/.test(t) ? 'Molli / liquide' : /sangue|muco/.test(t) ? 'Con sangue o muco' : /gialli|arancio/.test(t) ? 'Urati gialli o arancio' : /dur[ie]|granulos/.test(t) ? 'Urati duri o granulosi' : /odore|puzz/.test(t) ? 'Odore anomalo' : 'Normale';
+      return { kind: 'add', type: 'waste', data: { data: date, tipo, aspetto, note: '' } };
+    }
+    // Manutenzione
+    if (/pulizia profonda|pulito tutto/.test(t)) return { kind: 'add', type: 'maintenance', data: { data: date, tipo: 'Pulizia profonda', note: '' } };
+    if (/substrato/.test(t)) return { kind: 'add', type: 'maintenance', data: { data: date, tipo: 'Cambio substrato', note: '' } };
+    if (/\bacqua\b/.test(t) && !/umidit/.test(t)) return { kind: 'add', type: 'maintenance', data: { data: date, tipo: 'Cambio acqua', note: '' } };
+    if (/pulit|pulizia|spot/.test(t)) return { kind: 'add', type: 'maintenance', data: { data: date, tipo: 'Spot cleaning', note: '' } };
+    // Handling
+    if (/handling|maneggiat|in mano|preso/.test(t)) {
+      const mins = t.match(/(\d+)\s*(?:min|minuti)\b/);
+      const comp = /soffi|difensiv|morso|morde/.test(t) ? 'Difensivo / Soffia' : /agitat|nervos/.test(t) ? 'Agitato' : /timid|nascost/.test(t) ? 'Timido / Nascosto' : 'Tranquillo / Curioso';
+      return { kind: 'add', type: 'handling', data: { data: date, durata: mins ? +mins[1] : 10, comportamento: comp, note: '' } };
+    }
+    // Clima: temperature e umidità
+    const kw = (re) => { const m = t.match(re); return m ? toNum(m[1]) : null; };
+    let calda = kw(new RegExp('(?:calda|caldo|hot)\\s*:?\\s*' + numRe)), fredda = kw(new RegExp('(?:fredda|freddo|cold)\\s*:?\\s*' + numRe)), notte = kw(new RegExp('notte\\s*:?\\s*' + numRe));
+    const hum = kw(new RegExp(numRe + '\\s*(?:%|percento)')) ?? kw(new RegExp('umidit[aà]\\s*:?\\s*' + numRe));
+    if (calda === null && fredda === null) {
+      const temps = [...t.matchAll(new RegExp(numRe + '\\s*(?:°\\s*c?|gradi)', 'g'))].map(m => toNum(m[1]));
+      if (temps.length) { calda = Math.max(...temps); if (temps.length > 1) fredda = Math.min(...temps); }
+    }
+    if (calda !== null || fredda !== null || hum !== null || notte !== null) {
+      const tm = timeOf(t);
+      return { kind: 'add', type: 'env', data: { datetime: `${date}T${tm || (date === Utils.todayISO() ? Utils.nowLocal().slice(11, 16) : '12:00')}`, tempCalda: calda, tempFredda: fredda, umidita: hum, tempNotte: notte, note: '' } };
+    }
+    // Crescita
+    if (/peso|pesa|pesato|lungh|misura/.test(t) || grams || cm) {
+      const g = grams ? toNum(grams[1]) : kw(new RegExp('(?:peso|pesa|pesato)\\s*:?\\s*' + numRe));
+      const l = cm ? toNum(cm[1]) : kw(new RegExp('(?:lungo|lunga|lunghezza)\\s*:?\\s*' + numRe));
+      if (g !== null || l !== null) return { kind: 'add', type: 'growth', data: { data: date, peso: g, lunghezza: l, note: '' } };
+    }
+    return null;
+  }
+
+  /** Riepilogo leggibile dei campi che verranno salvati */
+  function describe(r) {
+    if (r.kind !== 'add' && r.kind !== 'update') return `<div class="cmd-prev nav"><span class="t-ico">${I(r.kind === 'nav' ? 'chevron' : r.kind === 'search' ? 'search' : 'route')}</span><b>${Utils.esc(r.label)}</b></div>`;
+    const def = Schema.LOGS[r.type];
+    const rows = def.fields.filter(f => r.data[f.name] !== undefined && r.data[f.name] !== null && r.data[f.name] !== '' && f.name !== 'note')
+      .map(f => { const v = r.data[f.name]; const txt = f.type === 'date' ? Utils.fmtDate(v) : f.type === 'datetime-local' ? Utils.fmtDateTime(v) : f.type === 'number' ? Utils.fmtNum(v, f.unit || '') : String(v); return `<span><small>${Utils.esc(f.label)}</small><b>${Utils.esc(txt)}</b></span>`; });
+    return `<div class="cmd-prev"><span class="t-ico" style="color:${def.color}">${I(def.icon)}</span><div><b>${r.kind === 'update' ? Utils.esc(r.label) : (def.g === 'm' ? 'Nuovo ' : 'Nuova ') + def.label.toLowerCase()}</b><div class="cmd-fields">${rows.join('')}</div></div></div>`;
+  }
+
+  let current = null;
+  function open(text = '') {
+    const body = `<div class="cmd">
+      <div class="search cmd-input"><input class="input" id="cmdInput" type="text" autocomplete="off" enterkeyhint="done" placeholder="Es. ha mangiato hopper 6 g ieri" value="${Utils.esc(text)}" aria-label="Scrivi cosa hai fatto"></div>
+      <div id="cmdOut" aria-live="polite"></div>
+      <div class="cmd-ex"><span class="faint small">Prova:</span>${EXAMPLES.map(e => `<button class="chip chip-sm" data-cmd-ex="${Utils.esc(e)}">${Utils.esc(e)}</button>`).join('')}</div>
+    </div>`;
+    const footer = `<span class="faint small desktop-only" style="margin-right:auto"><kbd>Invio</kbd> salva · <kbd>Esc</kbd> chiude</span><button class="btn btn-ghost" data-cmd-form disabled>Modifica nel modulo</button><button class="btn btn-primary" data-cmd-go disabled>Salva</button>`;
+    const modal = Overlay.open({ title: `${I('command')} Comando rapido`, subtitle: 'Scrivi cosa hai fatto, come lo diresti a voce', body, footer, size: 'cmd-modal' });
+    const inp = modal.querySelector('#cmdInput'), out = modal.querySelector('#cmdOut');
+    const go = modal.querySelector('[data-cmd-go]'), form = modal.querySelector('[data-cmd-form]');
+    const update = () => {
+      current = parse(inp.value);
+      const has = !!current;
+      go.disabled = !has; form.disabled = !(has && (current.kind === 'add' || current.kind === 'update'));
+      go.textContent = !has ? 'Salva' : current.kind === 'add' || current.kind === 'update' ? 'Salva' : 'Vai';
+      Dom.morph(out, has ? describe(current) : inp.value.trim().length > 2 ? '<p class="cmd-none faint small">Non ho capito: prova con una delle frasi qui sotto.</p>' : '');
+    };
+    inp.addEventListener('input', update);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !go.disabled) { e.preventDefault(); run(); } });
+    modal.addEventListener('click', e => { const ex = e.target.closest('[data-cmd-ex]'); if (ex) { inp.value = ex.dataset.cmdEx; update(); inp.focus(); } });
+    go.addEventListener('click', run);
+    form.addEventListener('click', () => { const r = current; Overlay.close(true); if (r.kind === 'update') Forms.open(r.type, { id: r.id, presets: r.data }); else Forms.open(r.type, { presets: r.data }); });
+    update();
+    requestAnimationFrame(() => inp.focus({ preventScroll: true }));
+  }
+  function run() {
+    const r = current;
+    if (!r) return;
+    if (r.kind === 'nav') { Overlay.close(); Router.go(r.to); return; }
+    if (r.kind === 'search') { Overlay.close(true); Search.open(r.q); return; }
+    if (r.kind === 'round') { Overlay.close(true); Round.open(); return; }
+    const saved = r.kind === 'update' ? Store.update(r.type, r.id, r.data) : Store.add(r.type, r.data);
+    if (!saved) { Toast.show('Valori non validi: controlla e riprova', 'bad'); return; }
+    Overlay.close();
+    const def = Schema.LOGS[r.type];
+    Toast.show(r.kind === 'update' ? `${r.label}` : `${def.label} registrat${def.g === 'm' ? 'o' : 'a'}`, 'ok', { action: Actions.undoAction() });
+  }
+  return { open, parse };
 })();
 
 /* ==========================================================================
@@ -5993,6 +6590,7 @@ const Views = (() => {
 const Router = (() => {
   const VIEWS = [
     { id: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'home', sub: () => new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }) },
+    { id: 'agenda', label: 'Agenda', short: 'Agenda', icon: 'calendar', sub: () => 'Cosa fare nei prossimi 14 giorni, con le previsioni' },
     { id: 'clima', label: 'Terrario & Clima', short: 'Clima', mobile: 'Clima',  icon: 'thermo', sub: () => 'Temperature, umidità e soglie', add: 'env' },
     { id: 'alimentazione', label: 'Alimentazione & Crescita', short: 'Pasti', mobile: 'Pasti e crescita',  icon: 'mouse', sub: () => 'Pasti, rapporto preda e curva di crescita', add: () => Views.tabs.alimentazione },
     { id: 'cura', label: 'Mute & Cura', short: 'Cura', mobile: 'Mute e cura',  icon: 'shed', sub: () => 'Mute, manutenzione e handling', add: () => Views.tabs.cura },
@@ -6202,6 +6800,15 @@ const App = (() => {
       clearTimeout(pressTimer);
       pressTimer = setTimeout(() => { longPressed = true; if (navigator.vibrate) navigator.vibrate(15); Overlay.close(true); Forms.open('feeding'); }, 550);
     });
+    // Tenere premuto il "+" della barra in basso apre il comando rapido
+    document.addEventListener('pointerdown', e => {
+      if (!(e.target.closest && e.target.closest('.bn-add'))) return;
+      longPressed = false;
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => { longPressed = true; if (navigator.vibrate) navigator.vibrate(15); Overlay.close(true); Cmd.open(); }, 550);
+    });
+    document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.bn-add')) e.preventDefault(); });
+    bindAgenda();
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => document.addEventListener(ev, () => clearTimeout(pressTimer), true));
     document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('[data-meal]')) e.preventDefault(); });
 
@@ -6216,7 +6823,13 @@ const App = (() => {
       const meal = t.closest('[data-meal]');
       if (meal) { if (longPressed) { longPressed = false; return; } Motion.burst(meal); Overlay.close(true); Actions.quickMeal('Mangiato'); return; }
       if (t.closest('[data-meal-refuse]')) { Overlay.close(true); Actions.quickMeal('Rifiutato'); return; }
-      if (t.closest('[data-open-add]')) { Actions.openAddSheet(); return; }
+      if (t.closest('[data-open-add]')) { if (longPressed) { longPressed = false; return; } Actions.openAddSheet(); return; }
+      if (t.closest('[data-round]')) { Overlay.close(true); Round.open(); return; }
+      if (t.closest('[data-cmd]')) { Overlay.close(true); Cmd.open(); return; }
+      const agDo = t.closest('[data-ag-do]'); if (agDo) { agendaDo(agDo.dataset.agDo, agDo); return; }
+      const agMv = t.closest('[data-ag-move]'); if (agMv) { moveSheet(); return; }
+      const mvTo = t.closest('[data-move-to]'); if (mvTo) { Overlay.close(true); Actions.moveMeal(mvTo.dataset.moveTo); return; }
+      if (t.closest('[data-tt-now]')) { Views.setTimeTravel(0); return; }
       if (t.closest('[data-photo-add]')) { Overlay.close(true); Photos.openAdd(); return; }
       const add = t.closest('[data-add]');
       if (add) {
@@ -6260,7 +6873,7 @@ const App = (() => {
       if (t.closest('#btnInstall')) { PWA.install(); return; }
       if (t.closest('[data-settings-reset]')) { Router.render(true); Toast.show('Modifiche annullate', 'info'); }
     });
-    document.addEventListener('input', e => { if (e.target.id === 's-morph') document.getElementById('morphPreview').innerHTML = Views.morphPreviewHTML(e.target.value); });
+    document.addEventListener('input', e => { if (e.target.id === 'ttRange') { Views.setTimeTravel(-e.target.value); return; } if (e.target.id === 's-morph') document.getElementById('morphPreview').innerHTML = Views.morphPreviewHTML(e.target.value); });
     document.addEventListener('keydown', e => {
       const el = e.target.closest && e.target.closest('[data-snake], .tl-item[data-edit], [data-photo]');
       if ((e.key === 'Enter' || e.key === ' ') && el && !/^(BUTTON|A|INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) { e.preventDefault(); el.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
@@ -6272,6 +6885,7 @@ const App = (() => {
 
     // Scorciatoie da tastiera (desktop)
     document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); if (!Overlay.isOpen()) Cmd.open(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey || Overlay.isOpen()) return;
       if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); Actions.openAddSheet(); }
@@ -6285,14 +6899,110 @@ const App = (() => {
     Store.subscribe(() => Router.render());
   }
 
+  /* ---------- Agenda: fatto, sposta, trascina, scorri ---------- */
+  function agendaDo(id, el) {
+    const x = Views.getAgendaItem(id);
+    if (!x || !x.action) return;
+    if (el) Motion.burst(el);
+    const a = x.action;
+    if (a.kind === 'meal') Actions.quickMeal('Mangiato');
+    else if (a.kind === 'water') Actions.quickWater();
+    else if (a.kind === 'clean') Actions.quickClean();
+    else if (a.kind === 'dose') Actions.giveDose(a.id);
+    else if (a.kind === 'form') { Overlay.close(true); Forms.open(a.type); }
+  }
+  function moveSheet() {
+    const cur = Logic.feedingState().next, t = Utils.todayISO();
+    const days = Array.from({ length: 14 }, (_, i) => Utils.toISODate(Utils.addDays(Utils.parse(t), i)));
+    Overlay.open({ title: `${I('calendar')} Sposta il pasto`, subtitle: 'Vale solo per il prossimo pasto: poi l\'intervallo riparte normalmente', size: 'sm',
+      body: `<div class="move-grid">${days.map((d, i) => `<button class="move-day${d === cur ? ' cur' : ''}" data-move-to="${d}"${d === cur ? ' aria-current="date"' : ''}><small>${i === 0 ? 'Oggi' : i === 1 ? 'Domani' : Utils.cap(Utils.weekday(d)).slice(0, 3)}</small><b>${Utils.parse(d).getDate()}</b></button>`).join('')}</div>` });
+  }
+  function bindAgenda() {
+    // Trascina (mouse): il pasto si sposta su un altro giorno
+    let dragId = null;
+    document.addEventListener('dragstart', e => {
+      const it = e.target.closest && e.target.closest('.ag-item[data-movable]');
+      if (!it) return;
+      dragId = it.dataset.ag;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragId);
+      requestAnimationFrame(() => it.classList.add('dragging'));
+      document.getElementById('view-agenda').classList.add('is-dragging');
+    });
+    document.addEventListener('dragend', () => {
+      dragId = null;
+      document.querySelectorAll('.ag-item.dragging, .ag-day.drop-on').forEach(x => x.classList.remove('dragging', 'drop-on'));
+      const v = document.getElementById('view-agenda'); if (v) v.classList.remove('is-dragging');
+    });
+    document.addEventListener('dragover', e => {
+      if (!dragId) return;
+      const day = e.target.closest && e.target.closest('.ag-day');
+      document.querySelectorAll('.ag-day.drop-on').forEach(x => { if (x !== day) x.classList.remove('drop-on'); });
+      if (!day) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      day.classList.add('drop-on');
+    });
+    document.addEventListener('drop', e => {
+      const day = dragId && e.target.closest && e.target.closest('.ag-day');
+      if (!day) return;
+      e.preventDefault();
+      Actions.moveMeal(day.dataset.day);
+    });
+
+    // Scorri a destra (tocco): segna fatta una voce di oggi
+    let sw = null;
+    const reset = (el, done) => {
+      el.classList.remove('swiping');
+      el.style.removeProperty('--dx');
+      if (!done) el.animate && !Utils.reducedMotion() && el.animate([{ transform: `translateX(${sw.dx}px)` }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(0.22,1,0.36,1)' });
+    };
+    document.addEventListener('pointerdown', e => {
+      const el = e.target.closest && e.target.closest('.ag-item[data-swipe]');
+      if (!el || e.button > 0 || e.target.closest('button')) return;
+      sw = { el, id: el.dataset.ag, x: e.clientX, y: e.clientY, dx: 0, on: false, pid: e.pointerId };
+    });
+    document.addEventListener('pointermove', e => {
+      if (!sw || e.pointerId !== sw.pid) return;
+      const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+      if (!sw.on) {
+        if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { sw = null; return; }
+        if (dx < 10) return;
+        sw.on = true; sw.el.classList.add('swiping');
+        try { sw.el.setPointerCapture(e.pointerId); } catch (err) { /* nessuna cattura */ }
+      }
+      sw.dx = Math.max(0, Math.min(dx, sw.el.offsetWidth * .6));
+      sw.el.style.setProperty('--dx', sw.dx + 'px');
+      sw.el.classList.toggle('armed', sw.dx > 90);
+    });
+    const end = e => {
+      if (!sw || e.pointerId !== sw.pid) return;
+      const s = sw;
+      if (s.on) {
+        const ok = s.dx > 90 && e.type === 'pointerup';
+        reset(s.el, ok);
+        s.el.classList.remove('armed');
+        if (ok) { if (navigator.vibrate) navigator.vibrate(12); agendaDo(s.id, s.el.querySelector('.ag-ico')); }
+        const block = ev => { ev.stopPropagation(); ev.preventDefault(); };
+        document.addEventListener('click', block, { capture: true, once: true });
+        setTimeout(() => document.removeEventListener('click', block, { capture: true }), 50);
+      }
+      sw = null;
+    };
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+  }
+
   /** Menu "Altro" del telefono: sezioni che non stanno nella barra in basso */
   function openMenu() {
     const item = (nav, icon, title, sub) => `<button class="menu-item" data-nav="${nav}"><span class="t-ico">${I(icon)}</span><span><b>${title}</b><small>${sub}</small></span>${I('chevron')}</button>`;
     Overlay.open({ title: 'Altro', body: `<div class="menu-list">
+      ${item('agenda', 'calendar', 'Agenda', 'I prossimi 14 giorni e le previsioni')}
       ${item('gestione', 'wallet', 'Spese e scorte', 'Congelatore, acquisti e costi')}
       ${item('storia', 'book', 'Storia', 'I momenti importanti, da stampare')}
       ${item('impostazioni', 'gear', 'Impostazioni', 'Profilo, aspetto, backup e sincronizzazione')}
-      <button class="menu-item" data-search-open><span class="t-ico">${I('search')}</span><span><b>Cerca</b><small>In tutti i registri</small></span>${I('chevron')}</button></div>` });
+      <button class="menu-item" data-search-open><span class="t-ico">${I('search')}</span><span><b>Cerca</b><small>In tutti i registri</small></span>${I('chevron')}</button>
+      <button class="menu-item" data-cmd><span class="t-ico">${I('command')}</span><span><b>Comando rapido</b><small>Scrivi cosa hai fatto, a parole</small></span>${I('chevron')}</button></div>` });
   }
 
   async function deletePhoto(id) {
@@ -6315,6 +7025,8 @@ const App = (() => {
       else if (a === 'clima') Forms.open('env');
       else if (a === 'acqua') Actions.quickWater();
       else if (a === 'cerca') Search.open();
+      else if (a === 'giro') Round.open();
+      else if (a === 'scrivi') Cmd.open();
     }, 150);
   }
 
