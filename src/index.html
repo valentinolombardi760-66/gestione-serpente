@@ -1267,6 +1267,111 @@ h1 { font-weight: 800; letter-spacing: -.03em; }
    ========================================================================== */
 .discard-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: color-mix(in srgb, var(--warn) 14%, var(--card)); font-weight: 600; font-size: .9rem; animation: rise .25s var(--ease) both; }
 .discard-bar .row { gap: 8px; margin-left: auto; }
+/* ==========================================================================
+   14. MOTION SYSTEM — un solo linguaggio di movimento per tutta l'app
+   Durate: instant 90 · fast 160 · base 240 · slow 340 ms. Le uscite durano ~70%.
+   Curve: --ease-out per entrate e risposte, --ease-in-out per spostamenti,
+   --ease-exit per uscite, --spring (molla smorzata, ~1% di rimbalzo) per
+   toggle, indicatori e pressioni. Si animano solo transform e opacity:
+   le transizioni CSS si interrompono e ripartono dal punto in cui sono.
+   ========================================================================== */
+:root {
+  --dur-instant: 90ms; --dur-fast: 160ms; --dur-base: 240ms; --dur-slow: 340ms; --dur-spring: 450ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --spring: linear(0, 0.0546, 0.1785, 0.3282, 0.477, 0.6107, 0.7227, 0.8117, 0.8793, 0.9284, 0.9624, 0.9848, 0.9987, 1.0064, 1.01, 1.011, 1.0104, 1.0091, 1.0074, 1.0058, 1.0043, 1.0031, 1.0021, 1.0014, 1);
+  --ease: var(--ease-out);
+  --stagger: 30ms;
+}
+
+/* Pressione: risposta immediata, rilascio con la molla */
+.btn, .quick-btn, .chip, .seg-btn, .add-tile, .menu-item, .bn-item, .nav-item, .status-pill, .task, .tl-item, .swatch, .ag-item {
+  transition-property: transform, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: var(--dur-spring), var(--dur-fast), var(--dur-fast), var(--dur-fast), var(--dur-fast), var(--dur-fast);
+  transition-timing-function: var(--spring), var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out);
+}
+.btn:active:not(:disabled), .quick-btn:active, .chip:active, .seg-btn:active, .add-tile:active, .menu-item:active, .status-pill:active, .tl-item:active, .swatch:active, .ag-item:active {
+  transform: scale(.97); transition-duration: var(--dur-instant); transition-timing-function: var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .card-hover:hover, .quick-btn:hover, .add-tile:hover { transform: translateY(-2px); }
+}
+@media (hover: none) { .card-hover:hover, .quick-btn:hover, .add-tile:hover { transform: none; } }
+
+/* Focus solo da tastiera: anello Foglia che "si stacca" dal bordo */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; transition: outline-offset var(--dur-fast) var(--ease-out); }
+@starting-style { :focus-visible { outline-offset: 0; } }
+
+/* Barre e indicatori: transform invece di width/left */
+.kpi-bar i { width: 100% !important; transform-origin: left; transform: scaleX(var(--p, 0)); transition: transform var(--dur-slow) var(--ease-out); }
+.gauge-track { container-type: inline-size; }
+.gauge-pos { position: absolute; top: 0; bottom: 0; left: 0; width: 0; pointer-events: none; transform: translateX(calc(var(--x, 50) * 1cqw)); transition: transform 600ms var(--ease-out); }
+.gauge-pos .gauge-marker { left: 0 !important; transition: none; }
+.view.stagger .kpi-bar i { animation: grow var(--dur-slow) var(--ease-out) both; animation-delay: 180ms; }
+
+/* Cambio vista: lo gestisce Motion.enterView (interrompibile) */
+.view.active, .view.active.go-fwd, .view.active.go-back { animation: none; }
+.view.stagger [data-a] { animation: rise var(--dur-slow) var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 8) * var(--stagger)); }
+.view.stagger .tl-item { animation: rise var(--dur-slow) var(--ease-out) both; animation-delay: calc(120ms + min(var(--j, 0), 8) * var(--stagger)); }
+
+/* Modali e sheet: transizioni, quindi chiusura e riapertura deviano senza scatti */
+.overlay, .overlay.closing { animation: none !important; opacity: 0; transition: opacity var(--dur-base) var(--ease-out); }
+.overlay.open { opacity: 1; }
+.overlay.closing { transition-duration: 170ms; transition-timing-function: var(--ease-exit); }
+.overlay .modal, .overlay.closing .modal { animation: none !important; opacity: 0; transform: translateY(16px) scale(.96);
+  transition: transform 280ms var(--ease-out), opacity 200ms var(--ease-out); }
+.overlay.open .modal { opacity: 1; transform: none; }
+.overlay.closing .modal { transition-duration: 190ms, 150ms; transition-timing-function: var(--ease-exit); }
+@media (max-width: 640px) {
+  .overlay .modal, .overlay.closing .modal { opacity: 1; transform: translateY(100%); transition: transform var(--dur-spring) var(--spring); }
+  .overlay.open .modal { transform: none; }
+  .overlay.closing .modal { transition: transform 240ms var(--ease-exit); }
+}
+.modal-body .field, .modal-body .add-tile, .modal-body .quick-meal, .modal-body .setting-row { animation-duration: var(--dur-slow); }
+
+.overlay.swap, .overlay.swap .modal { transition: none; }
+.overlay.swap .modal-head, .overlay.swap .modal-body, .overlay.swap .modal-foot { animation: fadeSwap var(--dur-fast) var(--ease-out) both; }
+@keyframes fadeSwap { from { opacity: 0; } }
+
+/* Notifiche: entrano con la molla, si impilano scorrendo, si scartano di lato */
+.toast, .toast.leaving { animation: none !important; transition: transform var(--dur-spring) var(--spring), opacity var(--dur-base) var(--ease-out); touch-action: pan-y; }
+.toast.enter { opacity: 0; transform: translateY(18px) scale(.96); }
+.toast.leaving { opacity: 0; transform: translateY(8px) scale(.97); transition: transform 180ms var(--ease-exit), opacity 160ms var(--ease-exit); }
+.toast.dragging { transition: none; }
+
+/* Voce appena registrata: si illumina e sfuma */
+@keyframes newGlow { from { background-color: color-mix(in srgb, var(--accent) 22%, transparent); } to { background-color: transparent; } }
+.rtable tbody tr.is-new, .tl-item.is-new, .ag-item.is-new { animation: newGlow 1.2s var(--ease-out) both; }
+.rtable tbody tr { animation: none; }
+.rtable tbody tr.row-in { animation: fadeRow var(--dur-base) var(--ease-out) both; }
+
+/* Skeleton: compaiono solo se l'attesa supera 150 ms */
+@keyframes skelShow { from { opacity: 0; } to { opacity: 1; } }
+.skel, .skel-line { animation: skelShow 1ms linear 150ms both, shimmer 1.4s linear 150ms infinite; }
+.skel-line { display: block; height: 44px; border-radius: 14px; margin-bottom: 8px; background: linear-gradient(90deg, var(--elev) 0%, var(--elev-2) 50%, var(--elev) 100%); background-size: 200% 100%; }
+
+/* Pulsanti con stato: in corso, riuscito, errore */
+.btn.is-busy { pointer-events: none; }
+.btn.is-busy .ic { animation: spin .8s linear infinite; }
+.btn.is-done { background: var(--accent-soft); color: var(--accent); }
+.btn.is-error { animation: shake .4s var(--ease-out); }
+.btn .ic-check { stroke-dasharray: 30; animation: draw .3s var(--ease-out) both; }
+
+/* Menu "Altro" sul telefono: icona più riconoscibile con etichetta */
+.top-more { height: 40px; padding: 0 10px; gap: 6px; }
+.top-more .btn-label { font-size: .74rem; font-weight: 700; }
+@media (max-width: 360px) { .top-more .btn-label { display: none; } }
+
+/* Movimento ridotto: dissolvenze brevi al posto degli spostamenti, feedback di stato conservati */
+@media (prefers-reduced-motion: reduce) {
+  .overlay .modal, .overlay.open .modal, .overlay.closing .modal { transform: none !important; }
+  .toast, .toast.enter, .toast.leaving { transform: none !important; }
+  .gauge-pos, .kpi-bar i { transition: none; }
+  .rtable tbody tr.is-new, .tl-item.is-new, .ag-item.is-new { animation-duration: 1.2s !important; }
+  .btn.is-busy .ic { animation-duration: .8s !important; animation-iteration-count: infinite !important; }
+}
+
 </style>
 </head>
 <body>
@@ -1298,7 +1403,7 @@ h1 { font-weight: 800; letter-spacing: -.03em; }
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-icon" data-search-open aria-label="Cerca (/)" title="Cerca (/)" id="topSearch"></button>
       <button class="btn btn-ghost btn-icon hidden" data-sync-now id="topSync" aria-label="Sincronizza"></button>
-      <button class="btn btn-ghost btn-icon mobile-only" data-menu aria-label="Altro" id="topGear"></button>
+      <button class="btn btn-ghost mobile-only top-more" data-menu aria-label="Altro" id="topGear"></button>
       <button class="btn btn-primary" id="topAction" data-open-add><span class="desktop-only">Registra</span></button>
     </div>
   </header>
@@ -1504,6 +1609,10 @@ const Icons = (() => {
     sync: '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/>',
     palette: '<path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.2-1.8l-.4-.8c-.5-1 .2-2.4 1.4-2.4H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="14.5" cy="7" r="1"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    more: '<rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>',
+    command: '<path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6z"/>',
+    route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>',
+    rewind: '<path d="M11 19 2 12l9-7v14zM22 19l-9-7 9-7v14z"/>',
     flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
     star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
     x: '<path d="M18 6 6 18M6 6l12 12"/>',
@@ -1783,7 +1892,9 @@ const Store = (() => {
    */
   const history = [];
   let lastToken = null;
-  let unsaved = false;   // true se l'ultimo salvataggio nel browser non è riuscito
+  let unsaved = false;
+  const recent = new Map();   // id -> momento dell'ultima aggiunta/modifica, per evidenziare la voce
+  const touch = id => { recent.set(id, Date.now()); if (recent.size > 50) recent.delete(recent.keys().next().value); };   // true se l'ultimo salvataggio nel browser non è riuscito
 
   function applyAliases(obj, map) {
     const out = { ...obj };
@@ -2058,6 +2169,7 @@ const Store = (() => {
       const e = normalizeEntry(type, { ...data, id: Utils.uid(), _m: nowISO() });
       if (!e) return null;
       record('Nuova voce', { op: 'add', items: [{ type, id: e.id }] });
+      touch(e.id);
       state.logs[type].push(e);
       sortLog(type, state.logs[type]);
       if (type === 'growth') syncProfileFromGrowth();
@@ -2082,6 +2194,7 @@ const Store = (() => {
       const e = normalizeEntry(type, { ...prev, ...data, id, _m: nowISO() });
       if (!e) return null;
       record('Modifica', { op: 'update', type, prev: clone(prev), m: e._m });
+      touch(e.id);
       state.logs[type][i] = e;
       sortLog(type, state.logs[type]);
       if (type === 'growth') syncProfileFromGrowth();
@@ -2143,6 +2256,8 @@ const Store = (() => {
     /** Token dell'ultima azione registrata, da legare alla notifica con "Annulla" */
     get lastToken() { return lastToken; },
     get unsaved() { return unsaved; },
+    /** true per pochi secondi dopo che la voce è stata aggiunta o modificata */
+    isRecent: id => recent.has(id) && Date.now() - recent.get(id) < 4000,
     /**
      * Riduce le letture ambientali più vecchie di "days" giorni a una ogni 6 ore,
      * per liberare spazio nel browser. Ritorna il numero di letture tolte.
@@ -2846,26 +2961,72 @@ const Logic = (() => {
    ========================================================================== */
 const Toast = (() => {
   const ICONS = { ok: '✓', warn: '!', bad: '✕', info: 'i' };
-  function show(msg, type = 'ok', { duration = 3800, action = null } = {}) {
+  /** Sposta con un'animazione le notifiche che cambiano posizione (FLIP) */
+  function flip(host, mutate) {
+    const before = new Map([...host.children].map(k => [k, k.getBoundingClientRect().top]));
+    mutate();
+    if (Utils.reducedMotion()) return;
+    for (const k of host.children) {
+      const b = before.get(k);
+      if (b === undefined || k.classList.contains('leaving')) continue;
+      const d = b - k.getBoundingClientRect().top;
+      if (Math.abs(d) > 1) k.animate([{ translate: `0 ${d}px` }, { translate: '0 0' }], { duration: 280, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    }
+  }
+  function show(msg, type = 'ok', { duration = null, action = null } = {}) {
     const host = document.getElementById('toasts');
     if (!host) return;
-    while (host.children.length >= 4) host.firstElementChild.remove();
+    // Con "Annulla" serve più tempo per decidere
+    if (duration === null) duration = action ? 6000 : 3800;
     const el = document.createElement('div');
-    el.className = `toast t-${type}`;
-    el.setAttribute('role', 'status');
+    el.className = `toast t-${type} enter`;
+    el.setAttribute('role', type === 'bad' ? 'alert' : 'status');
     el.innerHTML = `<span class="badge b-${type === 'info' ? 'info' : type}" style="width:22px;padding:0;justify-content:center">${ICONS[type] || ''}</span>
       <span class="t-msg">${Utils.esc(msg)}</span>
       ${action ? `<button class="t-action">${Utils.esc(action.label)}</button>` : ''}
       <button class="t-close" aria-label="Chiudi notifica">✕</button>
       <span class="t-progress" style="animation-duration:${duration}ms"></span>`;
-    host.appendChild(el);
+    flip(host, () => {
+      const live = [...host.children].filter(c => !c.classList.contains('leaving'));
+      if (live.length >= 4) live[0].remove();
+      host.appendChild(el);
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('enter')));
     let timer = null, remaining = duration, started = Date.now();
-    const close = () => { clearTimeout(timer); if (el.classList.contains('leaving')) return; el.classList.add('leaving'); setTimeout(() => el.remove(), 250); };
-    const start = () => { started = Date.now(); timer = setTimeout(close, remaining); };
-    el.addEventListener('mouseenter', () => { clearTimeout(timer); remaining -= Date.now() - started; el.classList.add('paused'); });
+    const close = (dx = 0) => {
+      clearTimeout(timer);
+      if (el.classList.contains('leaving')) return;
+      el.classList.add('leaving');
+      if (dx) el.style.transform = `translateX(${dx > 0 ? 110 : -110}%)`;
+      setTimeout(() => flip(host, () => el.remove()), 190);
+    };
+    const start = () => { started = Date.now(); clearTimeout(timer); timer = setTimeout(close, remaining); };
+    const pause = () => { clearTimeout(timer); remaining -= Date.now() - started; el.classList.add('paused'); };
+    el.addEventListener('mouseenter', pause);
     el.addEventListener('mouseleave', () => { el.classList.remove('paused'); start(); });
-    el.querySelector('.t-close').addEventListener('click', close);
+    el.querySelector('.t-close').addEventListener('click', () => close());
     if (action) el.querySelector('.t-action').addEventListener('click', () => { action.run(); close(); });
+    // Scorrere di lato per chiudere (telefono e trackpad)
+    let x0 = null, dx = 0, v = 0, lx = 0, lt = 0;
+    el.addEventListener('pointerdown', e => {
+      if (e.target.closest('button')) return;
+      x0 = e.clientX; dx = 0; v = 0; lx = e.clientX; lt = performance.now();
+      el.classList.add('dragging'); pause();
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* */ }
+    });
+    el.addEventListener('pointermove', e => {
+      if (x0 === null) return;
+      const t = performance.now(); if (t > lt) v = (e.clientX - lx) / (t - lt);
+      lx = e.clientX; lt = t; dx = e.clientX - x0;
+      el.style.transform = `translateX(${dx}px)`; el.style.opacity = String(Math.max(.2, 1 - Math.abs(dx) / 240));
+    });
+    const end = () => {
+      if (x0 === null) return;
+      x0 = null; el.classList.remove('dragging'); el.style.opacity = '';
+      if (Math.abs(dx) > 80 || Math.abs(v) > .6) close(dx || v);
+      else { el.style.transform = ''; el.classList.remove('paused'); start(); }
+    };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
     start();
   }
   return { show };
@@ -2875,12 +3036,14 @@ const Toast = (() => {
    Overlay — modali / bottom sheet e conferme
    ========================================================================== */
 const Overlay = (() => {
-  let current = null, lastFocus = null;
+  let current = null, lastFocus = null, swappedAt = 0;
+  const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([type=hidden]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
   function open({ title, subtitle = '', body, footer = '', size = '', onClose = null, guard = null }) {
     close(true);
     lastFocus = document.activeElement;
     const host = document.getElementById('overlayHost');
+    host.querySelectorAll('.overlay.closing').forEach(o => o.remove());   // niente doppioni durante l'uscita
     const wrap = document.createElement('div');
     wrap.className = 'overlay';
     wrap.innerHTML = `<div class="modal ${size}" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -2891,7 +3054,19 @@ const Overlay = (() => {
         ${footer ? `<div class="modal-foot">${footer}</div>` : ''}
       </div>`;
     host.appendChild(wrap);
+    // Un pannello che ne sostituisce un altro (es. "Registra" → modulo) cambia sul posto, senza risalire
+    if (performance.now() - swappedAt < 80) wrap.classList.add('open', 'swap');
+    else { void wrap.offsetWidth; wrap.classList.add('open'); }
     current = { el: wrap, onClose, guard };
+    // Il Tab resta dentro il pannello
+    wrap.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') return;
+      const f = [...wrap.querySelectorAll(FOCUSABLE)].filter(x => x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !wrap.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
     enableDrag(wrap.querySelector('.modal'));
     wrap.addEventListener('mousedown', e => { if (e.target === wrap) request(); });
     wrap.querySelector('[data-close]').addEventListener('click', () => request());
@@ -2933,28 +3108,42 @@ const Overlay = (() => {
     const { el, onClose } = current;
     current = null;
     document.body.style.overflow = '';
-    if (immediate) el.remove();
-    else { el.classList.add('closing'); setTimeout(() => el.remove(), 220); }
+    if (immediate) { el.remove(); swappedAt = performance.now(); }
+    else {
+      // Si toglie "open": la transizione torna indietro dal punto in cui si trova
+      el.classList.add('closing'); el.classList.remove('open', 'swap');
+      el.style.pointerEvents = 'none';
+      const m = el.querySelector('.modal'); if (m) m.style.transform = '';
+      setTimeout(() => el.remove(), 260);
+    }
     if (onClose) onClose();
     if (!immediate && lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
   }
 
   /** Su telefono il pannello si chiude trascinandolo verso il basso dalla maniglia o dal titolo */
   function enableDrag(modal) {
-    let y0 = null, dy = 0, pid = null;
+    let y0 = null, dy = 0, pid = null, lastY = 0, lastT = 0, vel = 0;
     const start = e => {
       if (!window.matchMedia('(max-width: 640px)').matches || e.target.closest('button, input, a')) return;
-      y0 = e.clientY; dy = 0; pid = e.pointerId;
+      y0 = e.clientY; dy = 0; pid = e.pointerId; lastY = e.clientY; lastT = performance.now(); vel = 0;
       modal.style.transition = 'none';
       try { modal.setPointerCapture(pid); } catch (err) { /* ignorato */ }
     };
-    const move = e => { if (y0 === null) return; dy = Math.max(0, e.clientY - y0); modal.style.transform = `translateY(${dy}px)`; };
+    const move = e => {
+      if (y0 === null) return;
+      const t = performance.now();
+      if (t > lastT) vel = vel * .3 + ((e.clientY - lastY) / (t - lastT)) * .7;   // px/ms, smussata
+      lastY = e.clientY; lastT = t;
+      dy = Math.max(0, e.clientY - y0);
+      modal.style.transform = `translateY(${dy}px)`;
+    };
     const end = () => {
       if (y0 === null) return;
       y0 = null;
       try { modal.releasePointerCapture(pid); } catch (err) { /* ignorato */ }
       modal.style.transition = '';
-      if (dy > 110 && request()) return;
+      // Si chiude con uno spostamento ampio o con un gesto veloce verso il basso
+      if ((dy > 110 || (vel > .5 && dy > 24)) && request()) return;
       modal.style.transform = '';
     };
     modal.querySelectorAll('.grabber, .modal-head').forEach(el => el.addEventListener('pointerdown', start));
@@ -3320,6 +3509,7 @@ const Charts = (() => {
       cur.data.labels = labels;
       series.forEach((s, i) => { cur.data.datasets[i] = Object.assign(cur.data.datasets[i] || {}, dataset(s, labels.length)); });
       cur.$band = band;
+      cur.options.animation.duration = 400;   // le linee scorrono ai nuovi valori, senza ripartire dal basso
       cur.update(Utils.reducedMotion() ? 'none' : undefined);
       return;
     }
@@ -3535,7 +3725,7 @@ const Records = (() => {
     const shown = list.slice(0, limit);
     return `<div class="rtable-wrap"><div class="rtable-scroll"><table class="rtable">
         <thead><tr>${cfg.cols.map(c => `<th>${c[0]}</th>`).join('')}<th><span class="sr-only">Azioni</span></th></tr></thead>
-        <tbody>${shown.map(e => `<tr data-key="${Utils.esc(e.id)}">${cfg.cols.map((c, i) => {
+        <tbody>${shown.map(e => `<tr data-key="${Utils.esc(e.id)}"${Store.isRecent(e.id) ? ' class="is-new"' : ''}>${cfg.cols.map((c, i) => {
           const html = c[1](e);
           const cls = [i === 0 ? 'cell-primary' : '', c[2] || '', c[2] === 'cell-notes' && !e.note ? 'is-empty' : ''].filter(Boolean).join(' ');
           return `<td data-label="${c[0]}"${cls ? ` class="${cls}"` : ''}>${html || (c[2] === 'cell-notes' ? '<span class="faint">—</span>' : '')}</td>`;
@@ -3546,7 +3736,21 @@ const Records = (() => {
       <div class="list-foot"><span>${list.length === all.length ? Utils.plural(all.length, 'voce', 'voci') : `${list.length} di ${all.length} voci`}</span><span class="desktop-only">Doppio clic su una riga per modificarla</span></div>`;
   }
 
-  function refresh(type) { const host = document.querySelector(`[data-rows="${type}"]`); if (host) Dom.morph(host, rows(type)); }
+  /** Ricerca e filtri: le righe che restano scorrono al nuovo posto, quelle nuove sfumano (FLIP) */
+  function refresh(type) {
+    const host = document.querySelector(`[data-rows="${type}"]`);
+    if (!host) return;
+    const trs = () => [...host.querySelectorAll('tbody tr[data-key]')];
+    const before = new Map(trs().slice(0, 60).map(r => [r.dataset.key, r.getBoundingClientRect().top]));
+    Dom.morph(host, rows(type));
+    if (Utils.reducedMotion()) return;
+    trs().slice(0, 60).forEach(r => {
+      const b = before.get(r.dataset.key);
+      if (b === undefined) { r.classList.remove('row-in'); void r.offsetWidth; r.classList.add('row-in'); return; }
+      const d = b - r.getBoundingClientRect().top;
+      if (Math.abs(d) > 1) r.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    });
+  }
 
   // Ricerca: lo stato si aggiorna subito, la tabella dopo una breve pausa nella digitazione
   const timers = {};
@@ -3798,22 +4002,31 @@ const Actions = (() => {
    ========================================================================== */
 const Anim = (() => {
   const prev = new Map();
+  const shown = new Map();   // valore mostrato in questo istante, per ripartire da lì se cambia a metà
+  const runs = new Map();
   function countUp(root) {
     root.querySelectorAll('[data-count]').forEach(el => {
       const to = Utils.num(el.dataset.count);
       if (to === null) return;
       const key = el.dataset.key || '';
       const dec = +el.dataset.dec || 0;
-      const from = prev.has(key) ? prev.get(key) : 0;
+      if (prev.get(key) === to && runs.get(key) === undefined) { el.textContent = Utils.fmtNum(Utils.round(to, dec), '', dec); return; }
+      const from = shown.has(key) ? shown.get(key) : (prev.has(key) ? prev.get(key) : 0);
       prev.set(key, to);
       const fmt = v => Utils.fmtNum(Utils.round(v, dec), '', dec);
       if (from === to || Utils.reducedMotion()) { el.textContent = fmt(to); return; }
-      const t0 = performance.now(), dur = 900;
+      el.textContent = fmt(from);   // nessun fotogramma col valore finale prima del conteggio
+      const t0 = performance.now(), dur = 700, run = {};
+      runs.set(key, run);
       const ease = t => 1 - Math.pow(2, -10 * t);
       const step = now => {
+        if (runs.get(key) !== run) return;   // un valore più nuovo ha preso il posto di questo
         const t = Math.min(1, (now - t0) / dur);
-        el.textContent = fmt(from + (to - from) * (t === 1 ? 1 : ease(t)));
-        if (t < 1) requestAnimationFrame(step);
+        const v = from + (to - from) * (t === 1 ? 1 : ease(t));
+        shown.set(key, v);
+        const target = el.isConnected ? el : document.querySelector(`[data-count][data-key="${key}"]`);
+        if (target) target.textContent = fmt(v);
+        if (t < 1) requestAnimationFrame(step); else { runs.delete(key); shown.delete(key); }
       };
       requestAnimationFrame(step);
     });
@@ -3829,19 +4042,37 @@ const Motion = (() => {
   const BLOCKS = ':scope > *, .grid > *, .quick > *, .stats > *, .g-main > *, .med-cards > *, .ach-row > *, .settings-list > *';
   let timer = null;
 
+  const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
+  /**
+   * Entrata della vista: Web Animations, così un nuovo tocco annulla l'animazione
+   * in corso e la nuova parte subito, senza aspettare la fine della precedente.
+   */
+  function enterView(view, back) {
+    document.querySelectorAll('.view').forEach(v => v.getAnimations().forEach(a => { if (a.id === 'view') a.cancel(); }));
+    const frames = reduced()
+      ? [{ opacity: 0 }, { opacity: 1 }]
+      : [{ opacity: 0, transform: `translateX(${back ? -12 : 12}px)` }, { opacity: 1, transform: 'none' }];
+    const a = view.animate(frames, { duration: reduced() ? 120 : 240, easing: EASE_OUT });
+    a.id = 'view';
+  }
+
   /** Entrata a cascata degli elementi della schermata */
   function stagger(view) {
     if (!view || reduced()) return;
     let i = 0;
+    // Solo ciò che si vede nella prima schermata: il resto entra già al suo posto
+    const limit = window.innerHeight * 1.1;
     view.querySelectorAll(BLOCKS).forEach(el => {
       if (el.closest('.modal') || el.matches('style, script')) return;
+      if (i > 8 || el.getBoundingClientRect().top > limit) return;
       el.setAttribute('data-a', '');
-      el.style.setProperty('--i', Math.min(i++, 14));
+      el.style.setProperty('--i', i++);
     });
-    view.querySelectorAll('.tl-item').forEach((el, j) => el.style.setProperty('--j', Math.min(j, 10)));
-    view.classList.remove('stagger'); void view.offsetWidth; view.classList.add('stagger');
+    view.querySelectorAll('.tl-item').forEach((el, j) => el.style.setProperty('--j', Math.min(j, 8)));
+    view.classList.remove('stagger');
+    requestAnimationFrame(() => view.classList.add('stagger'));
     clearTimeout(timer);
-    timer = setTimeout(() => view.classList.remove('stagger'), 1600);
+    timer = setTimeout(() => { view.classList.remove('stagger'); view.querySelectorAll('[data-a]').forEach(el => el.removeAttribute('data-a')); }, 900);
   }
 
   /** Indicatore che scorre sotto la voce attiva (barra laterale e barra del telefono) */
@@ -3923,7 +4154,31 @@ const Motion = (() => {
     let rt = null;
     window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { navIndicators(); segments(); }, 120); });
   }
-  return { stagger, navIndicators, segments, burst, init };
+  /**
+   * Pulsante con stato: in corso (icona che gira), riuscito (spunta), errore (vibrazione).
+   * fn può essere asincrona; il pulsante non cambia larghezza.
+   */
+  async function busy(btn, fn) {
+    if (!btn || btn.classList.contains('is-busy')) return fn && fn();
+    const html = btn.innerHTML, w = btn.offsetWidth;
+    btn.style.minWidth = `${w}px`;
+    btn.classList.add('is-busy'); btn.setAttribute('aria-busy', 'true');
+    if (!btn.querySelector('.ic')) btn.insertAdjacentHTML('afterbegin', I('sync'));
+    try {
+      const r = await fn();
+      btn.classList.remove('is-busy'); btn.removeAttribute('aria-busy');
+      if (r === false) { btn.innerHTML = html; btn.style.minWidth = ''; return r; }
+      btn.classList.add('is-done'); btn.innerHTML = `${I('check').replace('class="ic"', 'class="ic ic-check"')} Fatto`;
+      setTimeout(() => { if (!btn.isConnected) return; btn.classList.remove('is-done'); btn.innerHTML = html; btn.style.minWidth = ''; }, 900);
+      return r;
+    } catch (err) {
+      btn.classList.remove('is-busy'); btn.removeAttribute('aria-busy');
+      btn.innerHTML = html; btn.style.minWidth = '';
+      btn.classList.remove('is-error'); void btn.offsetWidth; btn.classList.add('is-error');
+      throw err;
+    }
+  }
+  return { stagger, navIndicators, segments, burst, init, enterView, busy };
 })();
 
 /* ==========================================================================
@@ -4293,7 +4548,7 @@ const Terrarium = (() => {
     pop.innerHTML = `
       <div class="row-between" style="margin-bottom:8px"><b>${I(HOT[key].icon)} ${r.label}</b><button class="btn btn-ghost btn-sm btn-icon" data-pop-close aria-label="Chiudi">${I('x')}</button></div>
       ${env ? `<div class="row" style="gap:10px;margin-bottom:10px"><span class="pop-val c-${ev.status}">${Utils.fmtNum(v, r.unit)}</span><span class="badge b-${ev.status}">${ev.label}</span></div>
-        <div class="gauge-track" style="height:8px"><div class="gauge-band" style="left:${pos(r.lo)}%;width:${pos(r.hi) - pos(r.lo)}%"></div><div class="gauge-marker" style="left:${v === null ? 50 : pos(v)}%;color:${colorOf(ev.status)};width:14px;height:14px"></div></div>
+        <div class="gauge-track" style="height:8px"><div class="gauge-band" style="left:${pos(r.lo)}%;width:${pos(r.hi) - pos(r.lo)}%"></div><div class="gauge-pos" style="--x:${v === null ? 50 : Utils.round(pos(v), 2)}"><div class="gauge-marker" style="color:${colorOf(ev.status)};width:14px;height:14px"></div></div></div>
         <p class="faint small" style="margin-top:10px">${r.brum ? 'Invernale' : 'Ottimale'} <b class="muted">${Utils.fmtNum(r.lo)}–${Utils.fmtNum(r.hi)} ${r.unit}</b> · lettura ${Utils.relTime(env.datetime)}<br>${Utils.fmtDateTime(env.datetime)}</p>
         ${key === 'tempFredda' && night ? `<p class="faint small" style="margin-top:6px">${I('moon')} Minima notturna <b class="c-${nightEv.status}">${Utils.fmtNum(night.v, '°C')}</b> · ${Utils.relTime(night.dt)}</p>` : ''}`
         : `<p class="muted small">Nessuna lettura registrata. Range ottimale ${Utils.fmtNum(r.lo)}–${Utils.fmtNum(r.hi)} ${r.unit}.</p>`}
@@ -5084,7 +5339,7 @@ const Views = (() => {
           <span class="gauge-val">${cur ? `<span class="badge b-${ev.status}">${ev.label}</span><b class="c-${ev.status}">${Utils.fmtNum(v, r.unit)}</b>` : '<span class="faint small">nessun dato</span>'}</span></div>
         <div class="gauge-track" role="meter" aria-label="${r.label}" aria-valuemin="${dMin}" aria-valuemax="${dMax}" aria-valuenow="${v ?? ''}">
           <div class="gauge-band" style="left:${pos(r.lo)}%;width:${pos(r.hi) - pos(r.lo)}%"></div>
-          ${cur ? `<div class="gauge-marker" style="left:${pos(v)}%;color:${color}"></div>` : ''}
+          ${cur ? `<div class="gauge-pos" style="--x:${Utils.round(pos(v), 2)}"><div class="gauge-marker" style="color:${color}"></div></div>` : ''}
         </div>
         <div class="gauge-scale"><span>${Utils.fmtNum(dMin)}</span><span style="left:${pos(r.lo)}%">${Utils.fmtNum(r.lo)}</span><span style="left:${pos(r.hi)}%">${Utils.fmtNum(r.hi)}</span><span>${Utils.fmtNum(dMax)}${r.unit}</span></div>
         ${cur && cur.dt !== now.latest.datetime ? `<div class="faint small">lettura ${Utils.relTime(cur.dt)}</div>` : ''}
@@ -5093,7 +5348,7 @@ const Views = (() => {
   }
 
   function alertsHTML(list) {
-    if (!list.some(a => a.level !== 'info')) list = [{ level: 'ok', icon: 'ok', title: 'Tutto nella norma', text: 'Parametri e routine rispettano i target impostati.' }, ...list];
+    if (!list.some(a => a.level !== 'info')) list = [{ level: 'ok', icon: 'ok', title: 'Nessun avviso', text: 'Parametri e routine rispettano i target impostati.' }, ...list];
     lastAlerts = list;
     return `<div class="alerts">${list.map((a, i) => `<div class="alert l-${a.level}">
         <span class="alert-ico">${ico(a.icon)}</span>
@@ -5123,7 +5378,7 @@ const Views = (() => {
     if (!items.length) return `<div class="empty"><div class="empty-ico">${I('notes')}</div><b>Nessuna attività</b><p>Le registrazioni compariranno qui in ordine cronologico.</p><button class="btn btn-primary btn-sm" data-open-add>${I('plus')} Registra</button></div>`;
     return `<div class="timeline">${items.slice(0, limit).map(({ t, e, date }) => {
       const def = Schema.LOGS[t]; const [d, b] = desc[t](e);
-      return `<div class="tl-item" data-edit="${t}" data-id="${Utils.esc(e.id)}" role="button" tabindex="0">
+      return `<div class="tl-item${Store.isRecent(e.id) ? ' is-new' : ''}" data-edit="${t}" data-id="${Utils.esc(e.id)}" role="button" tabindex="0">
         <span class="tl-ico" style="color:${def.color};box-shadow:inset 0 0 0 1px ${def.color}33">${I(def.icon)}</span>
         <div class="tl-body"><div class="tl-title">${def.label} ${b}</div><div class="tl-desc">${Utils.esc(d)}${e.note ? ` · <span class="faint">${Utils.esc(e.note)}</span>` : ''}</div></div>
         <div class="tl-time"><b>${Utils.cap(Utils.relTime(date))}</b><time datetime="${Utils.esc(date)}">${Utils.fmtDateTime(date)}</time></div>
@@ -5136,7 +5391,7 @@ const Views = (() => {
       <div class="kpi-top"><span class="kpi-label">${label}</span><span class="dot ${status}"></span></div>
       <div class="kpi-value" data-kpi="${key}">${value}</div>
       <div class="kpi-sub">${sub}</div>
-      ${bar !== null ? `<div class="kpi-bar"><i style="width:${Utils.clamp(bar.pct, 0, 100)}%;background:var(--${bar.color})"></i></div>` : ''}
+      ${bar !== null ? `<div class="kpi-bar"><i style="--p:${Utils.clamp(bar.pct, 0, 100) / 100};background:var(--${bar.color})"></i></div>` : ''}
     </div>`;
   }
 
@@ -5514,7 +5769,7 @@ const Views = (() => {
             </div>
             <h3 style="margin:16px 0 8px">Copie automatiche</h3>
             <p class="faint small" style="margin-bottom:8px">Salvate in questo browser prima di import, demo, svuotamento e una volta a settimana. Le ultime 6.</p>
-            <div id="snapList" class="snap-list" data-keep><p class="faint small">Carico…</p></div>
+            <div id="snapList" class="snap-list" data-keep><span class="skel-line" aria-hidden="true"></span><span class="skel-line" aria-hidden="true"></span><span class="sr-only">Carico le copie…</span></div>
             <p class="faint small" style="margin-top:12px">${Utils.plural(total, 'voce', 'voci')} · ${(size / 1024).toFixed(1).replace('.', ',')} KB${st.updatedAt ? ` · salvato ${Utils.toDMY(st.updatedAt.slice(0, 10))} ${new Date(st.updatedAt).toTimeString().slice(0, 5)}` : ''}</p>
           </div>
           <div class="card"><div class="card-head"><h2>${I('palette')} Aspetto</h2><span class="sub">solo su questo dispositivo</span></div>
@@ -5628,7 +5883,7 @@ const Views = (() => {
         return `<div class="card stock-card ${low ? 'low' : ''} ${cur ? 'cur' : ''}">
           <div class="row-between"><span class="kpi-label">${I('box')} ${Utils.esc(x.preda)}</span>${cur ? '<span class="badge b-info">in uso</span>' : ''}</div>
           <div class="stock-num"><b data-count="${x.left}" data-key="stock-${x.preda}">${x.left}</b><small>pz</small></div>
-          <div class="kpi-bar"><i style="width:${pct}%;background:${low ? 'var(--warn)' : 'var(--accent)'}"></i></div>
+          <div class="kpi-bar"><i style="--p:${Utils.clamp(pct, 0, 100) / 100};background:${low ? 'var(--warn)' : 'var(--accent)'}"></i></div>
           <p class="muted small">${x.left ? `circa ${Utils.plural(x.days, 'giorno', 'giorni')} di pasti` : 'esaurite'} · ${x.used} usate su ${x.bought}</p>
           <div class="row mt-sm"><button class="btn btn-sm ${low ? 'btn-primary' : ''}" data-add="stock" data-preset-preda="${Utils.esc(x.preda)}">${I('plus')} Acquisto</button><span class="faint small">ultimo ${Utils.fmtDateShort(x.lastBuy.data)}</span></div>
         </div>`; }).join('')}</div>` : `<div class="empty"><div class="empty-ico">${I('box')}</div><b>Nessuna scorta registrata</b><p>Segna quanti topi hai nel congelatore: a ogni pasto il conteggio scende da solo e ti avviso quando stanno per finire.</p><button class="btn btn-primary btn-sm" data-add="stock">${I('plus')} Registra un acquisto</button></div>`;
@@ -5651,7 +5906,7 @@ const Views = (() => {
           <div class="card"><div class="card-head"><h2>Ultimi 12 mesi</h2></div>
             <div class="bars">${ex.months.map((m, i) => `<div class="bar" style="--d:${i * 40}" title=""${Utils.fmtNum(m.eur, '€', 2)}"><i style="height:${Math.max(2, m.eur / maxM * 100)}%"></i><span>${MN[+m.k.slice(5) - 1]}</span></div>`).join('')}</div></div>
           <div class="card"><div class="card-head"><h2>Per categoria</h2><span class="sub">${Utils.todayISO().slice(0, 4)}</span></div>
-            ${cats.length ? `<div class="cats">${cats.map(([c, v]) => `<div class="cat"><div class="row-between"><span>${Utils.esc(c)}</span><b>${Utils.fmtNum(Math.round(v * 100) / 100, '€', 2)}</b></div><div class="kpi-bar"><i style="width:${v / maxC * 100}%"></i></div></div>`).join('')}</div>` : '<p class="faint small">Nessuna spesa quest\'anno.</p>'}</div>
+            ${cats.length ? `<div class="cats">${cats.map(([c, v]) => `<div class="cat"><div class="row-between"><span>${Utils.esc(c)}</span><b>${Utils.fmtNum(Math.round(v * 100) / 100, '€', 2)}</b></div><div class="kpi-bar"><i style="--p:${maxC ? v / maxC : 0}"></i></div></div>`).join('')}</div>` : '<p class="faint small">Nessuna spesa quest\'anno.</p>'}</div>
         </div>
         <div class="card mt"><div class="card-head"><h2>Spese</h2><button class="btn btn-sm" data-add="expense">${I('plus')} Spesa</button></div>
           <p class="faint small" style="margin:-6px 0 12px">I totali includono anche il costo degli acquisti di prede e delle visite veterinarie.</p>${Records.block('expense')}</div>`;
@@ -5749,8 +6004,8 @@ const Router = (() => {
     current = id;
     document.querySelectorAll('.view').forEach(v => {
       const on = v.id === `view-${id}`;
-      if (on && changed) { v.classList.remove('active', 'go-fwd', 'go-back'); void v.offsetWidth; v.classList.add(back ? 'go-back' : 'go-fwd'); }
       v.classList.toggle('active', on);
+      if (on && changed && booted) Motion.enterView(v, back);
     });
     document.querySelectorAll('[data-nav]').forEach(b => { const on = b.dataset.nav === id; b.classList.toggle('active', on); on ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'); });
     if (location.hash !== `#${id}`) history[replace ? 'replaceState' : 'pushState'](null, '', `#${id}`);
@@ -5971,8 +6226,8 @@ const App = (() => {
       const pdel = t.closest('[data-photo-del]'); if (pdel) { deletePhoto(pdel.dataset.photoDel); return; }
       if (t.closest('[data-compare]')) { const [a, b] = [...Views.photoSel]; if (a && b) Photos.compare(a, b); return; }
       const ph = t.closest('[data-photo]'); if (ph) { Views.togglePhoto(ph.dataset.photo); return; }
-      if (t.closest('[data-export]')) { Actions.exportBackup(); return; }
-      if (t.closest('[data-share]')) { Actions.shareBackup(); return; }
+      if (t.closest('[data-export]')) { Motion.busy(t.closest('[data-export]'), () => Actions.exportBackup()).catch(() => {}); return; }
+      if (t.closest('[data-share]')) { Motion.busy(t.closest('[data-share]'), () => Actions.shareBackup()).catch(() => {}); return; }
       if (t.closest('[data-import]')) { document.getElementById('importFile').click(); return; }
       const snap = t.closest('[data-snap]'); if (snap) { Actions.restoreSnapshot(snap.dataset.snap); return; }
       if (t.closest('[data-notify-on]')) { Notify.enable(); return; }
@@ -6052,7 +6307,7 @@ const App = (() => {
     Icons.observe();
     document.querySelector('.brand-mark').innerHTML = I('snake');
     document.getElementById('topSearch').innerHTML = I('search');
-    document.getElementById('topGear').innerHTML = I('menu');
+    document.getElementById('topGear').innerHTML = `${I('more')}<span class="btn-label">Altro</span>`;
     document.getElementById('topSync').innerHTML = I('sync');
     Theme.init();
     Router.buildNav();
