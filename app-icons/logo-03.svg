@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t03">
+  <title id="t03">SNAKEcheck · Logo #03 · Terrario</title>
+  <defs>
+    <linearGradient id="g03bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16302a"/>
+      <stop offset="1" stop-color="#0d1f17"/>
+    </linearGradient>
+    <linearGradient id="g03vetro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f5148"/>
+      <stop offset=".7" stop-color="#2c4a33"/>
+      <stop offset="1" stop-color="#4a3a22"/>
+    </linearGradient>
+    <radialGradient id="g03luce" cx="70%" cy="0%" r="70%">
+      <stop offset="0" stop-color="#ffb347" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="g03clip"><rect x="112" y="170" width="288" height="226" rx="34"/></clipPath>
+  </defs>
+  <g id="sfondo"><rect width="512" height="512" fill="url(#g03bg)"/></g>
+  <g id="vasca">
+    <rect x="112" y="170" width="288" height="226" rx="34" fill="url(#g03vetro)"/>
+    <g clip-path="url(#g03clip)">
+      <rect x="112" y="170" width="288" height="226" fill="url(#g03luce)"/>
+      <rect x="112" y="342" width="288" height="60" fill="#6b4a2b"/>
+      <path d="M 150 350 C 150 290 176 250 196 236 C 186 280 182 318 176 350 Z" fill="#9be15d"/>
+      <path d="M 176 350 C 190 300 218 280 236 276 C 222 302 206 330 200 350 Z" fill="#6fbf3c"/>
+      <path d="M 156 334 C 161.7 331 178.3 316 190 316 C 201.7 316 214 333.7 226 334 C 238 334.3 250 318 262 318 C 274 318 287.3 333.3 298 334 C 308.7 334.7 321.3 324 326 322" fill="none" stroke="#ff8a3d" stroke-width="26" stroke-linecap="round"/>
+      <ellipse cx="338" cy="318" rx="22" ry="16" fill="#ff8a3d"/>
+      <circle cx="344" cy="313" r="4.5" fill="#b3192e"/>
+    </g>
+    <rect x="112" y="170" width="288" height="226" rx="34" fill="none" stroke="#fff1df" stroke-opacity=".9" stroke-width="16"/>
+  </g>
+  <g id="lampada">
+    <rect x="276" y="118" width="12" height="40" rx="6" fill="#8aa596"/>
+    <path d="M 238 182 A 44 30 0 0 1 326 182 Z" fill="#203a31" stroke="#fff1df" stroke-width="10" stroke-linejoin="round"/>
+    <ellipse cx="282" cy="184" rx="26" ry="8" fill="#ffb347"/>
+  </g>
+</svg>

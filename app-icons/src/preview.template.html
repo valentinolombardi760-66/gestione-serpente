@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNAKEcheck · 10 icone app</title>
+<style>
+:root{
+  --notte:#0d1f17;--bosco:#16302a;--muschio:#24453a;--foglia:#9be15d;--lampada:#ffb347;--amel:#ff8a3d;--corallo:#f2603a;--crema:#fff1df;
+  --font-display:"Bricolage Grotesque","Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+body[data-bg="scuro"]{--bg:#0b1812;--card:#13261e;--card2:#1b3329;--line:#2a4639;--txt:#eaf2e3;--muted:#a3bfae;--tile:#0d1f17}
+body[data-bg="chiaro"]{--bg:#f1f4ec;--card:#ffffff;--card2:#e8eee2;--line:#d5dfcc;--txt:#10261b;--muted:#4d6556;--tile:#ffffff}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 var(--font);transition:background .25s,color .25s}
+a{color:inherit}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px 80px}
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:12px 16px}
+.brand{display:flex;align-items:center;gap:10px;font:700 19px/1 var(--font-display);letter-spacing:-.01em;margin-right:auto}
+.brand img{width:32px;height:32px;border-radius:9px}
+.ctrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctrl > span{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.seg{display:inline-flex;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--txt);font:600 13px var(--font);padding:7px 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--foglia);color:#04261a}
+.seg button:focus-visible,.chip:focus-visible,.btn:focus-visible{outline:2px solid var(--lampada);outline-offset:2px}
+h1{font:800 clamp(30px,5vw,52px)/1.05 var(--font-display);letter-spacing:-.02em;margin:36px 0 10px}
+h2{font:750 clamp(22px,3vw,30px)/1.15 var(--font-display);margin:56px 0 6px;letter-spacing:-.01em}
+.lead{color:var(--muted);max-width:760px;margin:0 0 8px}
+.sub{color:var(--muted);margin:0 0 20px;max-width:820px}
+nav.toc{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 0}
+nav.toc a{text-decoration:none;font-weight:600;font-size:13px;padding:6px 12px;border-radius:999px;background:var(--card2);border:1px solid var(--line)}
+
+/* ---------- Maschere icona ---------- */
+.ico{display:block;flex:none;overflow:hidden;background:var(--notte)}
+.ico img{display:block;width:100%;height:100%}
+body[data-mask="quadrata"] .ico.m{border-radius:0}
+body[data-mask="arrotondata"] .ico.m{border-radius:22.5%}
+body[data-mask="cerchio"] .ico.m{border-radius:50%}
+body[data-mask="squircle"] .ico.m{-webkit-mask:var(--squircle) center/100% 100% no-repeat;mask:var(--squircle) center/100% 100% no-repeat}
+
+/* ---------- Scale ---------- */
+.grid-scale{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,560px),1fr));gap:14px}
+.scard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:border-color .2s, transform .2s}
+.scard:hover{border-color:var(--foglia)}
+.scard.sel{border-color:var(--foglia);box-shadow:0 0 0 2px var(--foglia) inset}
+.scard .hd{display:flex;align-items:baseline;gap:10px}
+.scard .num{font:800 22px var(--font-display);color:var(--foglia)}
+body[data-bg="chiaro"] .scard .num{color:#3d8a1f}
+.scard .nm{font:700 16px var(--font-display)}
+.scard .tag{margin-left:auto;font-size:12px;color:var(--muted)}
+.scales{display:flex;align-items:flex-end;gap:16px;overflow-x:auto;padding-bottom:4px}
+.scales figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.scales figcaption{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.s256{width:256px;height:256px}.s128{width:128px;height:128px}.s48{width:48px;height:48px}.s24{width:24px;height:24px}.s16{width:16px;height:16px}
+@media (max-width:640px){.s256{width:160px;height:160px}.s128{width:96px;height:96px}}
+.minis{display:flex;gap:10px;align-items:center}
+.minis .pair{display:flex;gap:6px;align-items:center;padding:6px 8px;border-radius:10px}
+.minis .pair.l{background:#fafaf7}.minis .pair.d{background:#0b0d10}
+
+/* ---------- Luoghi ---------- */
+.picker{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 18px;position:sticky;top:64px;z-index:10;padding:10px;border-radius:16px;background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:12px;padding:4px 10px 4px 4px;font:700 13px var(--font);cursor:pointer}
+.chip img{width:28px;height:28px;border-radius:8px}
+.chip[aria-pressed="true"]{border-color:var(--foglia);background:color-mix(in srgb,var(--foglia) 22%,var(--card2))}
+.btn{border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:12px;padding:8px 12px;font:600 13px var(--font);cursor:pointer}
+.btn.pri{background:var(--foglia);color:#04261a;border-color:transparent}
+.scenes{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,400px),1fr));gap:16px}
+.scene{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column}
+.scene.wide{grid-column:1/-1}
+.scene .stage{position:relative;display:flex;align-items:center;justify-content:center;padding:22px;min-height:420px;overflow:hidden}
+.scene .cap{padding:12px 16px 16px;border-top:1px solid var(--line)}
+.scene .cap b{font:700 15px var(--font-display)}
+.scene .cap p{margin:2px 0 0;color:var(--muted);font-size:13px}
+
+/* telefono */
+.phone{position:relative;width:290px;height:590px;border-radius:44px;padding:10px;background:#0a0a0a;box-shadow:0 0 0 2px #2b2b2b,0 30px 60px -20px rgba(0,0,0,.6)}
+.phone .scr{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;color:#fff;font-family:var(--font)}
+.phone .island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:86px;height:24px;border-radius:14px;background:#000;z-index:5}
+.sb{display:flex;justify-content:space-between;padding:12px 22px 0;font:600 12px var(--font);position:relative;z-index:4}
+.wall-dark{background:radial-gradient(120% 70% at 80% 0%,rgba(255,179,71,.35),transparent 55%),radial-gradient(90% 60% at 0% 100%,rgba(155,225,93,.28),transparent 60%),linear-gradient(170deg,#1d3d33,#0d1f17 60%,#08130e)}
+.wall-light{background:radial-gradient(100% 60% at 100% 0%,rgba(255,179,71,.45),transparent 60%),radial-gradient(90% 60% at 0% 100%,rgba(155,225,93,.55),transparent 60%),linear-gradient(170deg,#f4f7ee,#dfead4)}
+.leafdeco{position:absolute;inset:auto -30px -20px auto;width:240px;opacity:.5;pointer-events:none}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 0;padding:26px 14px 0;justify-items:center}
+.app{display:flex;flex-direction:column;align-items:center;gap:5px;width:64px}
+.app .ico{width:54px;height:54px}
+.app span{font-size:10.5px;line-height:1.1;text-align:center;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.wall-light .app span{color:#10261b;text-shadow:none}
+.ph{display:grid;place-items:center;width:100%;height:100%}
+.ph svg{width:56%;height:56%}
+.dock{position:absolute;left:12px;right:12px;bottom:14px;height:78px;border-radius:28px;display:flex;justify-content:space-around;align-items:center;background:rgba(255,255,255,.16);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.wall-light .dock{background:rgba(255,255,255,.55)}
+.dock .ico{width:54px;height:54px}
+.widget{grid-column:span 2;width:132px;height:132px;border-radius:24px;padding:12px;background:rgba(255,255,255,.75);color:#10261b;display:flex;flex-direction:column;gap:4px;box-shadow:0 8px 20px -10px rgba(0,0,0,.3)}
+.widget .row{display:flex;align-items:center;gap:6px;font:700 11px var(--font)}
+.widget .row .ico{width:20px;height:20px}
+.widget .big{font:800 20px/1.05 var(--font-display);margin-top:6px}
+.widget .small{font-size:11px;color:#4d6556}
+.widget .bar{margin-top:auto;height:6px;border-radius:6px;background:#dde6d5;overflow:hidden}
+.widget .bar i{display:block;height:100%;width:72%;background:#3d8a1f;border-radius:6px}
+
+/* blocco */
+.lock{text-align:center;padding-top:34px}
+.lock .d{font:600 14px var(--font);opacity:.85}
+.lock .t{font:700 74px/1 var(--font-display);letter-spacing:-.02em}
+.notif{margin:12px 10px 0;padding:11px 12px;border-radius:20px;background:rgba(30,40,35,.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);text-align:left;display:flex;gap:10px}
+.notif .ico{width:36px;height:36px}
+.notif .meta{display:flex;justify-content:space-between;font-size:11px;opacity:.7}
+.notif b{display:block;font-size:13px}
+.notif p{margin:1px 0 0;font-size:12.5px;line-height:1.3;opacity:.92}
+.notif-mini{display:flex;align-items:center;gap:6px;justify-content:center;margin-top:10px;font-size:11px;opacity:.8}
+.notif-mini .ico{width:16px;height:16px}
+
+/* desktop */
+.desk{width:100%;max-width:880px;aspect-ratio:16/10;border-radius:16px;position:relative;overflow:hidden;background:radial-gradient(80% 80% at 80% 0%,rgba(255,179,71,.35),transparent 60%),linear-gradient(160deg,#24453a,#0d1f17 70%);box-shadow:0 30px 60px -25px rgba(0,0,0,.6)}
+.win{position:absolute;left:6%;top:7%;width:78%;height:70%;border-radius:12px;background:#f7f8f5;box-shadow:0 20px 40px -12px rgba(0,0,0,.5);overflow:hidden;color:#10261b;display:flex;flex-direction:column}
+.tabs{display:flex;align-items:flex-end;gap:2px;background:#dfe5da;padding:8px 8px 0}
+.tabs .dots{display:flex;gap:6px;padding:0 10px 10px 4px}
+.tabs .dots i{width:11px;height:11px;border-radius:50%;background:#ff5f57}.tabs .dots i:nth-child(2){background:#febc2e}.tabs .dots i:nth-child(3){background:#28c840}
+.tab{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:9px 9px 0 0;font-size:12px;min-width:0;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab.on{background:#f7f8f5;font-weight:600}
+.tab .ico{width:16px;height:16px;border-radius:3px}
+.tab .gen{width:16px;height:16px;border-radius:4px;background:#b9c3b2;flex:none}
+.addr{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid #e2e7dd;font-size:12px}
+.addr .url{flex:1;background:#eef1ea;border-radius:999px;padding:6px 12px;color:#4d6556;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page{flex:1;display:flex;flex-direction:column;background:#0d1f17;color:#eaf2e3;min-height:0}
+.page .body{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;padding:14px}
+.page .body div{background:#16302a;border-radius:12px;padding:10px;font-size:11px;color:#a3bfae}
+.page .body b{display:block;font:800 20px var(--font-display);color:#9be15d}
+.page .body .ter{grid-row:span 2;background:linear-gradient(170deg,#1f4a44,#2c4a33 70%,#4a3a22);min-height:120px;color:#eaf2e3}
+@media (max-width:640px){.page .body{display:none}}
+.page .navl{display:flex;align-items:center;gap:8px;padding:12px 14px;font:700 14px var(--font-display);border-bottom:1px solid #24453a;width:100%;height:max-content}
+.page .navl .ico{width:24px;height:24px}
+.page .navl .lnk{margin-left:auto;display:flex;gap:12px;font:600 11px var(--font);opacity:.7}
+.ddock{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);display:flex;gap:10px;padding:8px 10px;border-radius:20px;background:rgba(255,255,255,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ddock .it{position:relative}
+.ddock .ico{width:48px;height:48px}
+.ddock .run::after{content:"";position:absolute;left:50%;bottom:-6px;width:4px;height:4px;border-radius:50%;background:#fff;transform:translateX(-50%)}
+@media (max-width:640px){.ddock .ico{width:30px;height:30px}.ddock{gap:6px;padding:5px 6px;border-radius:12px}}
+
+/* in-app */
+.inapp{display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:wrap}
+.splash{background:radial-gradient(80% 50% at 50% 40%,#1d3a31,#0d1f17 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;height:100%}
+.splash .ico{width:120px;height:120px;box-shadow:0 20px 50px -10px rgba(155,225,93,.25)}
+.splash .w{font:800 26px var(--font-display);letter-spacing:-.01em}
+.splash .s{font-size:12px;opacity:.7;margin-top:-12px}
+.splash .load{width:120px;height:4px;border-radius:4px;background:#24453a;overflow:hidden}
+.splash .load i{display:block;width:60%;height:100%;background:#9be15d;border-radius:4px;animation:ld 1.6s ease-in-out infinite}
+@keyframes ld{0%{transform:translateX(-100%)}100%{transform:translateX(170%)}}
+@media (prefers-reduced-motion:reduce){.splash .load i{animation:none}}
+.appbar{background:#0d1f17;color:#eaf2e3;height:100%;display:flex;flex-direction:column}
+.appbar .hdr{display:flex;align-items:center;gap:10px;padding:44px 16px 12px}
+.appbar .hdr .ico{width:34px;height:34px}
+.appbar .hdr b{font:800 19px var(--font-display)}
+.appbar .hdr small{display:block;font-size:11px;opacity:.6;font-weight:500}
+.appbar .card{margin:6px 14px;border-radius:18px;background:#16302a;padding:12px;display:flex;align-items:center;gap:12px}
+.appbar .card .ico{width:48px;height:48px}
+.appbar .card b{font:700 15px var(--font-display)}
+.appbar .card p{margin:0;font-size:11.5px;opacity:.7}
+.appbar .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 14px}
+.appbar .kpis div{background:#16302a;border-radius:14px;padding:10px;font-size:11px;opacity:.95}
+.appbar .kpis b{display:block;font:800 20px var(--font-display);color:#9be15d}
+.appbar .about{margin:auto 14px 18px;display:flex;align-items:center;gap:8px;font-size:11px;opacity:.7}
+.appbar .about .ico{width:20px;height:20px}
+
+/* terrario */
+.terra{width:100%;max-width:1000px}
+.terra svg{width:100%;height:auto;display:block;border-radius:14px}
+
+/* confronto */
+.cmp .apps{grid-template-columns:repeat(4,1fr);gap:16px 0}
+
+/* schede */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.card .top{display:flex;gap:14px;align-items:center}
+.card .top .ico{width:72px;height:72px}
+.card h3{margin:0;font:750 19px/1.15 var(--font-display)}
+.card .dir{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.card dl{margin:0;display:grid;gap:8px}
+.card dt{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.card dd{margin:0;font-size:14px}
+.card code{font-size:12.5px;background:var(--card2);padding:2px 6px;border-radius:6px}
+.card .acts{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
+.voti{display:flex;gap:6px;flex-wrap:wrap}
+.voti span{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line)}
+.voti span b{color:var(--foglia)}
+body[data-bg="chiaro"] .voti span b{color:#3d8a1f}
+
+/* decisioni */
+.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw div{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:12.5px}
+.sw i{width:30px;height:30px;border-radius:8px;display:block;border:1px solid rgba(0,0,0,.1)}
+.dec{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px;margin-top:16px}
+.dec div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.dec b{font-family:var(--font-display)}
+.dec p{margin:4px 0 0;color:var(--muted);font-size:13.5px}
+@media (max-width:720px){header.top{position:static}.picker{top:8px}}
+footer{margin-top:60px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body data-bg="scuro" data-mask="squircle">
+<header class="top"><div class="wrap">
+  <div class="brand"><img id="brandLogo" alt=""> SNAKEcheck · icone</div>
+  <div class="ctrl"><span>Sfondo</span><div class="seg" id="segBg">
+    <button data-v="chiaro">Chiaro</button><button data-v="scuro">Scuro</button></div></div>
+  <div class="ctrl"><span>Maschera</span><div class="seg" id="segMask">
+    <button data-v="quadrata">Quadrata</button><button data-v="arrotondata">Arrotondata</button><button data-v="squircle">Squircle</button><button data-v="cerchio">Cerchio</button></div></div>
+</div></header>
+
+<main class="wrap">
+  <h1>10 icone per SNAKEcheck</h1>
+  <p class="lead">Concept di icona app per la gestione di Pepe, il serpente del grano Amel: pasti, mute, peso, clima del terrario, scorte e agenda. Palette presa dal tema Giungla dell'app.</p>
+  <nav class="toc"><a href="#scale">Scale e maschere</a><a href="#luoghi">Luoghi d'uso</a><a href="#schede">Schede dei loghi</a><a href="#decisioni">Decisioni</a></nav>
+
+  <h2 id="scale">Scale e maschere</h2>
+  <p class="sub">Ogni icona a 256, 128, 48, 24 e 16 px (favicon). Cambia sfondo e maschera in alto. Le mini anteprime a destra mostrano 24 e 16 px sempre su chiaro e scuro. Clicca un'icona per usarla nei luoghi.</p>
+  <div class="grid-scale" id="gridScale"></div>
+
+  <h2 id="luoghi">Luoghi d'uso</h2>
+  <p class="sub">Gli ambienti dove l'icona vive davvero. Scegli un logo (o usa ← → sulla tastiera) e tutti i luoghi si aggiornano insieme. La maschera scelta in alto vale anche qui.</p>
+  <div class="picker" id="picker"></div>
+  <div class="scenes" id="scenes"></div>
+
+  <h2 id="schede">Schede dei loghi</h2>
+  <p class="sub">Per ogni concept: idea, legame con l'app, resa alle piccole dimensioni e file. I punteggi (1–5) sono la mia valutazione su leggibilità a 24 px, riconoscibilità e coerenza con il tema Giungla.</p>
+  <div class="cards" id="cards"></div>
+
+  <h2 id="decisioni">Decisioni di progetto</h2>
+  <p class="sub">Le scelte comuni a tutte le icone.</p>
+  <div class="sw" id="palette"></div>
+  <div class="dec">
+    <div><b>Fondo pieno, maschera esterna</b><p>Ogni SVG riempie tutto il quadrato 512×512. La forma (quadrata, arrotondata, squircle, cerchio) la applica il sistema, come per le icone Android adattive e le PWA "maskable".</p></div>
+    <div><b>Zona sicura r = 205 px</b><p>Il simbolo resta dentro un cerchio di raggio 205 px centrato, così il ritaglio a cerchio di Android non taglia nulla di importante.</p></div>
+    <div><b>Niente testo nell'icona</b><p>Il nome SNAKEcheck appare già sotto l'icona. Le lettere microscopiche sparirebbero a 24 px.</p></div>
+    <div><b>Tratti di almeno 40 px a 512</b><p>Corrispondono a circa 2 px a 24 px: abbastanza per restare nitidi. Le eccezioni (#06, #09) sono segnalate nelle schede.</p></div>
+    <div><b>Colori di Pepe</b><p>Arancio e rosso delle selle Amel, occhi rubino, contorni crema. Il verde Foglia #9be15d segnala "tutto a posto", come nell'app.</p></div>
+    <div><b>Funziona su chiaro e scuro</b><p>Nove icone su fondo scuro bosco e due su fondo chiaro (#06 carta, #08 menta) per avere alternative se il tema chiaro diventa quello principale.</p></div>
+  </div>
+
+  <footer>File in <code>app-icons/</code>: <code>logo-01.svg</code> … <code>logo-10.svg</code>, questa pagina e i sorgenti in <code>app-icons/src/</code>. Pagina autonoma, senza risorse esterne.</footer>
+</main>
+
+<script>
+const LOGHI = __LOGHI__;
+const INFO = [
+  {n:"01",nome:"Spira",dir:"Minimal geometrico",
+   scelta:"Una S fatta di due semicerchi perfetti, spessa e piena, con la sfumatura dall'ambra della lampada al corallo Amel. Un solo occhio scuro trasforma la lettera in un serpente.",
+   legame:"È il corpo di Pepe e insieme l'iniziale di SNAKEcheck. Riprende la sfumatura arancio dell'icona che oggi compare nella scheda \"La casa di Pepe\".",
+   piccole:"Ottima: a 16 px resta una S arancio leggibile. Limite: l'occhio sparisce sotto i 32 px e la forma è vicina ad altre app con la S.",
+   voti:[5,4,4]},
+  {n:"02",nome:"Monogramma S✓",dir:"Monogramma architetturale",
+   scelta:"S costruita con tratti dritti e curve a raggio costante, come un tubo. In basso un badge verde Foglia con la spunta, staccato dal fondo con un anello scuro.",
+   legame:"Si legge il nome: S di Snake e ✓ di check. La spunta verde è lo stesso segnale di \"Tutto nella norma\" della dashboard.",
+   piccole:"Molto buona: la spunta verde è la prima cosa che si vede anche a 24 px. Limite: a 16 px la S e il badge si toccano.",
+   voti:[5,5,5]},
+  {n:"03",nome:"Terrario",dir:"Metafora oggettuale",
+   scelta:"Una teca di vetro con bordo crema, lampada riscaldante accesa in alto, substrato, una pianta e il serpente che ondeggia sul fondo.",
+   legame:"È la stessa scena del pannello terrario della dashboard: zona calda sotto la lampada, zona fredda con la pianta. Racconta il clima e la cura dell'ambiente.",
+   piccole:"Buona fino a 48 px. A 24 px resta \"una teca con luce\", il serpente si perde. A 16 px è solo un rettangolo chiaro.",
+   voti:[3,4,5]},
+  {n:"04",nome:"Traiettoria",dir:"Simbolo dinamico",
+   scelta:"Il corpo del serpente diventa la linea di un grafico che sale, con la testa che punta in alto a destra. Sfumatura dal verde Foglia al corallo e un leggero bagliore su una griglia a puntini.",
+   legame:"Rappresenta il monitoraggio: peso che cresce, previsioni di muta e pasto, macchina del tempo. Il serpente in movimento è anche la crescita di Pepe.",
+   piccole:"Buona: la linea è spessa 42 px e a 24 px resta un'onda colorata. Limite: senza contesto può sembrare un'app di finanza.",
+   voti:[4,3,4]},
+  {n:"05",nome:"Gemma di vetro",dir:"3D, profondità e vetro",
+   scelta:"Il serpente arrotolato a spirale dentro una sfera di vetro, con ombra propria, riflesso bianco e un tratto di luce che corre sul dorso.",
+   legame:"Pepe raccolto come quando riposa nel nascondiglio. Il vetro richiama la teca, la spirale il ciclo delle routine.",
+   piccole:"Media: a 48 px è molto ricca. A 24 px diventa un disco arancio a righe e i dettagli 3D non si vedono. Pesa di più (filtri di sfocatura).",
+   voti:[3,4,4]},
+  {n:"06",nome:"Foglia monolinea",dir:"Monolinea editoriale",
+   scelta:"Una sola linea d'inchiostro disegna una foglia. La nervatura centrale è il serpente, con la testa sulla punta e la lingua biforcuta corallo come unico accento.",
+   legame:"Il nome del tema, Giungla, e il lato \"diario\" dell'app (storia, album, note). È l'unica icona chiara e tranquilla del set.",
+   piccole:"Debole sotto i 32 px: il tratto da 22 px diventa sottile e a 16 px la nervatura si perde. Ideale per stampa, splash e pagina \"Informazioni\".",
+   voti:[2,3,4]},
+  {n:"07",nome:"Emblema scaglia",dir:"Badge, emblema tecnico",
+   scelta:"Un esagono (la forma di una scaglia) con bordo ambra. Dentro, un quadrante con tacche come un termometro e la testa di Pepe vista dall'alto, con la punta di lancia tipica dei serpenti del grano.",
+   legame:"Parla di parametri e controllo: temperatura, umidità, giro di controllo. La punta di lancia sulla testa è un dettaglio vero del Pantherophis guttatus.",
+   piccole:"Buona: esagono ambra e testa arancio restano chiari a 24 px. Le tacche del quadrante spariscono sotto i 64 px (sono decorative).",
+   voti:[4,4,5]},
+  {n:"08",nome:"Pepe mascotte",dir:"Organico, mascotte",
+   scelta:"Il muso di Pepe di fronte, con grandi occhi rubino (gli Amel non hanno pigmento nero), selle rosse con bordo crema, guance rosate e la lingua. Il corpo esce in basso a destra.",
+   legame:"L'app è per un animale preciso, Pepe. È l'icona più affettuosa e la più riconoscibile per chi la usa ogni giorno.",
+   piccole:"Molto buona: gli occhi rossi su muso arancio si vedono anche a 16 px. Limite: lo stile simpatico è meno \"strumento\" e più \"compagnia\".",
+   voti:[5,5,3]},
+  {n:"09",nome:"Rete di cura",dir:"Nodo, rete, sistema",
+   scelta:"Il corpo del serpente è una linea che collega quattro nodi colorati: acqua (azzurro), salute (verde), clima (ambra) e muta (crema). La testa arancio guida la fila.",
+   legame:"È l'agenda e il giro di controllo: tante routine collegate in un unico percorso. I colori dei nodi sono quelli delle categorie dell'app.",
+   piccole:"Media: a 24 px restano dei puntini colorati collegati. La linea da 18 px è il punto debole sotto i 32 px.",
+   voti:[3,3,4]},
+  {n:"10",nome:"Mosaico di scaglie",dir:"Sperimentale, moderno",
+   scelta:"Una griglia 5×5 di scaglie arrotondate su fondo arancio Amel. Le scaglie crema disegnano una S, quella verde in alto a destra è la testa con l'occhio.",
+   legame:"La pelle di Pepe vista da vicino, trasformata in un pattern quasi digitale. La scaglia verde è il \"check\" che chiude la parola SNAKEcheck.",
+   piccole:"Buona: il fondo arancio pieno si riconosce subito in una griglia di app. A 16 px la S non si legge più, resta un quadrato a puntini.",
+   voti:[4,4,3]},
+];
+const ids = INFO.map(i=>i.n);
+const url = {};
+for (const k of ids) url[k] = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(LOGHI[k]);
+
+// maschera squircle (superellisse n=5), usata come mask-image
+(function(){
+  const n=5, pts=[];
+  for(let i=0;i<=200;i++){const t=i/200*2*Math.PI, c=Math.cos(t), s=Math.sin(t);
+    pts.push([50+50*Math.sign(c)*Math.pow(Math.abs(c),2/n), 50+50*Math.sign(s)*Math.pow(Math.abs(s),2/n)]);}
+  const d="M"+pts.map(p=>p[0].toFixed(2)+" "+p[1].toFixed(2)).join("L")+"Z";
+  const s=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='${d}'/></svg>`;
+  document.documentElement.style.setProperty("--squircle",`url("data:image/svg+xml,${encodeURIComponent(s)}")`);
+})();
+
+const $ = s=>document.querySelector(s);
+const ico = (k, cls="", masked=true) => `<span class="ico ${masked?"m":""} ${cls}"><img src="${url[k]}" alt="Logo ${k}" data-logo="${masked?"cur":""}"></span>`;
+const icoFix = (k, cls="", masked=true) => `<span class="ico ${masked?"m":""} ${cls}"><img src="${url[k]}" alt="Logo ${k}"></span>`;
+
+let sel = "02";
+try { const s = localStorage.getItem("snakecheck.icone.sel"); if (s && url[s]) sel = s; } catch(e){}
+
+// ---------- Scale
+$("#gridScale").innerHTML = INFO.map(i=>`
+ <div class="scard" data-k="${i.n}" tabindex="0" role="button" aria-label="Usa il logo ${i.n} nei luoghi">
+  <div class="hd"><span class="num">#${i.n}</span><span class="nm">${i.nome}</span><span class="tag">${i.dir}</span></div>
+  <div class="scales">
+   <figure>${icoFix(i.n,"s256")}<figcaption>256</figcaption></figure>
+   <figure>${icoFix(i.n,"s128")}<figcaption>128</figcaption></figure>
+   <figure>${icoFix(i.n,"s48")}<figcaption>48</figcaption></figure>
+   <figure>${icoFix(i.n,"s24")}<figcaption>24</figcaption></figure>
+   <figure>${icoFix(i.n,"s16",false)}<figcaption>16</figcaption></figure>
+  </div>
+  <div class="minis"><div class="pair l">${icoFix(i.n,"s24")}${icoFix(i.n,"s16",false)}</div><div class="pair d">${icoFix(i.n,"s24")}${icoFix(i.n,"s16",false)}</div><span style="font-size:12px;color:var(--muted)">24 / 16 px su chiaro e scuro</span></div>
+ </div>`).join("");
+
+// ---------- Icone segnaposto per le altre app (forme generiche, nessun marchio)
+const G = {
+  meteo:['#5aa9e6','#2f6fb3','<circle cx="40" cy="42" r="16" fill="#ffd166"/><rect x="34" y="50" width="44" height="22" rx="11" fill="#fff"/>'],
+  foto:['#ffffff','#e9edf2','<g transform="translate(50 50)"><circle r="8" cx="0" cy="-16" fill="#f6c343"/><circle r="8" cx="15" cy="-5" fill="#f08a5d"/><circle r="8" cx="10" cy="13" fill="#e05570"/><circle r="8" cx="-10" cy="13" fill="#7b6ef6"/><circle r="8" cx="-15" cy="-5" fill="#43b0f1"/></g>'],
+  note:['#ffe38a','#f7c948','<rect x="28" y="30" width="44" height="6" rx="3" fill="#8a6d1a"/><rect x="28" y="46" width="44" height="6" rx="3" fill="#8a6d1a" opacity=".6"/><rect x="28" y="62" width="30" height="6" rx="3" fill="#8a6d1a" opacity=".6"/>'],
+  cal:['#ffffff','#eef0f3','<rect x="24" y="24" width="52" height="14" rx="4" fill="#e5484d"/><text x="50" y="72" text-anchor="middle" font-family="Arial" font-weight="700" font-size="30" fill="#222">23</text>'],
+  mappe:['#7bd389','#3fa36b','<path d="M20 70 L45 30 L60 55 L80 40" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="70" cy="30" r="8" fill="#e5484d"/>'],
+  musica:['#ff6b8b','#d6336c','<path d="M42 70 V32 L70 26 V62" stroke="#fff" stroke-width="7" fill="none" stroke-linejoin="round"/><circle cx="36" cy="70" r="8" fill="#fff"/><circle cx="64" cy="64" r="8" fill="#fff"/>'],
+  orologio:['#2b2f36','#111317','<circle cx="50" cy="50" r="26" fill="none" stroke="#fff" stroke-width="5"/><path d="M50 36 V50 L60 58" stroke="#ffb347" stroke-width="5" stroke-linecap="round" fill="none"/>'],
+  posta:['#4dabf7','#1c7ed6','<rect x="24" y="32" width="52" height="36" rx="6" fill="#fff"/><path d="M26 36 L50 54 L74 36" stroke="#1c7ed6" stroke-width="5" fill="none"/>'],
+  impost:['#adb5bd','#6c757d','<circle cx="50" cy="50" r="18" fill="none" stroke="#fff" stroke-width="9" stroke-dasharray="7 4"/><circle cx="50" cy="50" r="7" fill="#fff"/>'],
+  camera:['#495057','#212529','<rect x="22" y="34" width="56" height="38" rx="8" fill="#ced4da"/><circle cx="50" cy="53" r="11" fill="#212529"/><rect x="38" y="27" width="24" height="10" rx="3" fill="#ced4da"/>'],
+  file:['#74c0fc','#339af0','<path d="M24 34 h20 l6 6 h26 v30 h-52 z" fill="#fff"/>'],
+  tel:['#69db7c','#2f9e44','<path d="M36 28 c-6 0-10 6-8 12 c6 18 18 30 36 36 c6 2 12-2 12-8 l-10-8 l-8 4 c-8-4-14-10-18-18 l4-8 z" fill="#fff"/>'],
+  msg:['#69db7c','#37b24d','<path d="M24 46 c0-12 12-20 26-20 s26 8 26 20 s-12 20-26 20 c-4 0-8 0-11-2 l-12 6 l3-10 c-4-4-6-9-6-14 z" fill="#fff"/>'],
+  web:['#ffffff','#e7f0ff','<circle cx="50" cy="50" r="24" fill="none" stroke="#1c7ed6" stroke-width="5"/><path d="M26 50 H74 M50 26 C38 40 38 60 50 74 C62 60 62 40 50 26" stroke="#1c7ed6" stroke-width="4" fill="none"/>'],
+};
+function gen(key, extra=""){const [a,b,g]=G[key];
+  const s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="x" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="100" height="100" fill="url(#x)"/>${g}</svg>`;
+  return `<span class="ico m ${extra}" style="background:${b}"><img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(s)}" alt=""></span>`;}
+const appG = (key,label)=>`<div class="app">${gen(key)}<span>${label}</span></div>`;
+const appMe = (k="cur")=>`<div class="app">${k==="cur"?ico(sel):icoFix(k)}<span>SNAKEcheck</span></div>`;
+const leaves = `<svg class="leafdeco" viewBox="0 0 200 200"><path d="M190 200 C120 180 90 120 110 40 C150 80 180 130 190 200Z" fill="#9be15d" opacity=".5"/><path d="M200 140 C150 150 110 120 100 80 C140 80 180 100 200 140Z" fill="#6fbf3c" opacity=".55"/></svg>`;
+
+// ---------- Luoghi
+const SCENES = [
+ {id:"home-scuro", t:"Home screen telefono, scuro", d:"Griglia di app comuni (icone generiche) su sfondo giungla notturna, con SNAKEcheck anche nel dock.", r:()=>`
+  <div class="phone"><div class="scr wall-dark"><div class="island"></div>
+   <div class="sb"><span>21:40</span><span>● ● ▮</span></div>
+   <div class="apps">${appG("meteo","Meteo")}${appG("foto","Foto")}${appG("cal","Calendario")}${appG("note","Note")}
+    ${appG("mappe","Mappe")}${appMe()}${appG("musica","Musica")}${appG("orologio","Orologio")}
+    ${appG("camera","Fotocamera")}${appG("file","File")}${appG("impost","Impostazioni")}${appG("posta","Posta")}</div>
+   ${leaves}
+   <div class="dock">${gen("tel")}${gen("msg")}${gen("web")}${ico(sel)}</div></div></div>`},
+ {id:"home-chiaro", t:"Home screen chiara con widget", d:"Sfondo chiaro e un widget \"Prossimo pasto\" con l'icona a 20 px nell'intestazione.", r:()=>`
+  <div class="phone"><div class="scr wall-light" style="color:#10261b"><div class="island"></div>
+   <div class="sb"><span>08:15</span><span>● ● ▮</span></div>
+   <div class="apps">
+     <div class="widget"><div class="row">${ico(sel)} SNAKEcheck</div><div class="small">Prossimo pasto</div><div class="big">Giovedì</div><div class="small">Pepe · topo adulto</div><div class="bar"><i></i></div></div>
+     ${appG("meteo","Meteo")}${appG("foto","Foto")}${appG("cal","Calendario")}${appG("note","Note")}
+     ${appMe()}${appG("mappe","Mappe")}${appG("musica","Musica")}${appG("posta","Posta")}</div>
+   <div class="dock">${gen("tel")}${gen("msg")}${gen("web")}${gen("camera")}</div></div></div>`},
+ {id:"blocco", t:"Schermata di blocco e notifiche", d:"I promemoria dell'app: l'icona a 36 px nella notifica e a 16 px nella riga compatta. È il test più duro per le piccole dimensioni.", r:()=>`
+  <div class="phone"><div class="scr wall-dark"><div class="island"></div>
+   <div class="sb"><span></span><span>● ● ▮</span></div>
+   <div class="lock"><div class="d">Giovedì 26 novembre</div><div class="t">19:30</div></div>
+   <div class="notif">${ico(sel)}<div style="flex:1"><div class="meta"><span>SNAKEcheck</span><span>ora</span></div><b>Giorno di pasto per Pepe</b><p>Topo adulto, 1 pezzo. Ne restano 4 nel freezer.</p></div></div>
+   <div class="notif">${ico(sel)}<div style="flex:1"><div class="meta"><span>SNAKEcheck</span><span>2 h fa</span></div><b>Cambia l'acqua</b><p>Ultimo cambio 3 giorni fa.</p></div></div>
+   <div class="notif-mini">${ico(sel)} 2 promemoria da SNAKEcheck</div>
+   ${leaves}</div></div>`},
+ {id:"desktop", t:"Desktop: scheda del browser e dock", wide:true, d:"L'app web aperta nel browser: favicon a 16 px nella scheda, logo 24 px nella barra dell'app, icona 48 px nel dock con il puntino \"in esecuzione\".", r:()=>`
+  <div class="desk"><div class="win">
+    <div class="tabs"><div class="dots"><i></i><i></i><i></i></div>
+      <div class="tab on">${ico(sel)}SNAKEcheck · Dashboard</div><div class="tab"><span class="gen"></span>Posta in arrivo</div><div class="tab"><span class="gen"></span>Meteo</div></div>
+    <div class="addr"><span>←</span><span>→</span><span class="url">valentinolombardi760-66.github.io/gestione-serpente</span></div>
+    <div class="page"><div class="navl">${ico(sel)}SNAKEcheck<span class="lnk"><span>Home</span><span>Agenda</span><span>Clima</span><span>Pasti</span><span>Salute</span></span></div><div class="body"><div class="ter">La casa di Pepe<br>Lato caldo 30,3° · Lato freddo 23,8°</div><div>Umidità<b>47%</b></div><div>Peso<b>57,5 g</b></div><div>Prossimo pasto<b>gio</b></div><div>Scorte<b>4 topi</b></div></div></div>
+  </div>
+  <div class="ddock"><span class="it">${gen("file")}</span><span class="it">${gen("web")}</span><span class="it">${gen("posta")}</span><span class="it">${gen("note")}</span><span class="it run">${ico(sel)}</span><span class="it">${gen("impost")}</span></div></div>`},
+ {id:"splash", t:"Avvio dell'app (splash)", d:"La prima schermata quando apri l'app installata: icona a 120 px su fondo bosco, nome e barra di caricamento.", r:()=>`
+  <div class="phone"><div class="scr"><div class="island"></div><div class="splash">${ico(sel)}<div class="w">SNAKEcheck</div><div class="s">La casa di Pepe</div><div class="load"><i></i></div></div></div></div>`},
+ {id:"inapp", t:"Dentro l'app: intestazione e scheda", d:"Logo 34 px nell'intestazione, 48 px nella scheda del profilo, 20 px nella riga \"Informazioni\". Stile Giungla scuro dell'app.", r:()=>`
+  <div class="phone"><div class="scr appbar"><div class="island"></div>
+   <div class="hdr">${ico(sel)}<div><b>SNAKEcheck</b><small>Lunedì 23 novembre</small></div></div>
+   <div class="card">${ico(sel)}<div><b>La casa di Pepe</b><p>Amel · 7 mesi · 57,5 g</p></div></div>
+   <div class="kpis"><div>Lato caldo<b>30,3°</b></div><div>Lato freddo<b>23,8°</b></div><div>Umidità<b>47%</b></div><div>Prossimo pasto<b>gio</b></div></div>
+   <div class="about">${ico(sel)} SNAKEcheck v7 · Informazioni</div></div></div>`},
+ {id:"confronto", t:"Confronto: tutte e 10 sulla stessa home", d:"Le 10 icone nella stessa griglia, alla stessa misura, per vedere quale si fa notare di più. Non cambia con la scelta del logo.", r:()=>`
+  <div class="phone cmp"><div class="scr wall-dark"><div class="island"></div>
+   <div class="sb"><span>21:40</span><span>● ● ▮</span></div>
+   <div class="apps">${ids.map(k=>`<div class="app">${icoFix(k)}<span>#${k}</span></div>`).join("")}${appG("meteo","Meteo")}${appG("foto","Foto")}</div>
+   ${leaves}<div class="dock">${gen("tel")}${gen("msg")}${gen("web")}${gen("camera")}</div></div></div>`},
+ {id:"terrario", t:"Nel mondo reale: il terrario di Pepe", wide:true, d:"Scena tematica: teca 60×40×40 sotto la lampada, etichetta adesiva sul vetro con l'icona e il telefono appoggiato sulla mensola con l'app aperta. Luce calda della lampada su tutta la scena.", r:()=>terrarium()},
+];
+
+function terrarium(){
+  const u = url[sel];
+  return `<div class="terra"><svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2620"/><stop offset="1" stop-color="#16130f"/></linearGradient>
+    <linearGradient id="tl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6a3f"/><stop offset="1" stop-color="#6b4527"/></linearGradient>
+    <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f4a44"/><stop offset=".6" stop-color="#25402d"/><stop offset="1" stop-color="#3d3020"/></linearGradient>
+    <radialGradient id="tlamp" cx="78%" cy="0%" r="60%"><stop offset="0" stop-color="#ffb347" stop-opacity=".85"/><stop offset=".5" stop-color="#ffb347" stop-opacity=".2"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>
+    <radialGradient id="troom" cx="62%" cy="6%" r="75%"><stop offset="0" stop-color="#ffb347" stop-opacity=".28"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>
+    <linearGradient id="trefl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="tsub" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a5532"/><stop offset="1" stop-color="#4a321c"/></linearGradient>
+    <linearGradient id="tbody" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffa24f"/><stop offset="1" stop-color="#f2603a"/></linearGradient>
+    <filter id="tsh" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+    <clipPath id="tclip"><rect x="140" y="110" width="520" height="330" rx="10"/></clipPath>
+    <clipPath id="stk"><rect x="0" y="0" width="64" height="64" rx="15"/></clipPath>
+    <clipPath id="pic"><rect x="0" y="0" width="70" height="70" rx="16"/></clipPath>
+    <clipPath id="phs"><rect x="0" y="0" width="122" height="246" rx="16"/></clipPath>
+  </defs>
+  <rect width="1000" height="560" fill="url(#tw)"/>
+  <rect width="1000" height="560" fill="url(#troom)"/>
+  <!-- mensola -->
+  <rect x="0" y="452" width="1000" height="26" fill="url(#tl)"/>
+  <rect x="0" y="478" width="1000" height="82" fill="#3b2817"/>
+  <rect x="0" y="452" width="1000" height="3" fill="#c79a6a" opacity=".6"/>
+  <ellipse cx="400" cy="458" rx="300" ry="10" fill="#000" opacity=".45" filter="url(#tsh)"/>
+  <!-- teca -->
+  <g clip-path="url(#tclip)">
+    <rect x="140" y="110" width="520" height="330" fill="url(#tg)"/>
+    <rect x="140" y="110" width="520" height="330" fill="url(#tlamp)"/>
+    <path d="M150 260 C240 230 330 250 420 210 C500 176 580 190 660 150 L660 170 C590 205 500 200 420 232 C330 268 240 252 150 282 Z" fill="#6b4527"/>
+    <path d="M140 380 C200 360 300 372 400 366 C500 360 600 372 660 362 L660 440 L140 440 Z" fill="url(#tsub)"/>
+    <path d="M176 382 C170 320 190 270 220 246 C214 300 210 340 206 382 Z" fill="#6fbf3c"/>
+    <path d="M206 382 C214 320 250 290 276 280 C258 316 240 350 232 382 Z" fill="#9be15d"/>
+    <path d="M600 372 C606 330 630 300 650 290 C640 330 630 352 626 372 Z" fill="#6fbf3c"/>
+    <path d="M250 382 A70 50 0 0 1 390 382 Z" fill="#3a3f3c"/><ellipse cx="320" cy="380" rx="34" ry="18" fill="#141614"/>
+    <ellipse cx="470" cy="388" rx="54" ry="14" fill="#1b2a2e"/><ellipse cx="470" cy="385" rx="44" ry="9" fill="#5cc3e8" opacity=".8"/>
+    <path d="M370 404 C400 392 420 412 450 404 C480 396 500 414 530 404 C556 396 572 408 590 398" stroke="url(#tbody)" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <g fill="#d9372b" stroke="#fff1df" stroke-width="2.5"><ellipse cx="405" cy="400" rx="7" ry="5"/><ellipse cx="452" cy="403" rx="7" ry="5"/><ellipse cx="500" cy="402" rx="7" ry="5"/><ellipse cx="545" cy="400" rx="7" ry="5"/></g>
+    <ellipse cx="598" cy="394" rx="13" ry="9" fill="#ff8a3d"/><circle cx="603" cy="391" r="2.6" fill="#b3192e"/>
+    <rect x="140" y="110" width="520" height="330" fill="url(#trefl)" transform="skewX(-25) translate(200 0)" opacity=".9"/>
+  </g>
+  <rect x="140" y="110" width="520" height="330" rx="10" fill="none" stroke="#0e0f0f" stroke-width="12"/>
+  <rect x="140" y="96" width="520" height="18" rx="4" fill="#202322"/>
+  <g stroke="#2b2f2e" stroke-width="2">${Array.from({length:26},(_,i)=>`<line x1="${150+i*20}" y1="98" x2="${150+i*20}" y2="112"/>`).join("")}</g>
+  <!-- lampada -->
+  <path d="M520 98 L540 60 L620 60 L640 98 Z" fill="#2c2f2e"/><rect x="574" y="20" width="12" height="42" fill="#2c2f2e"/>
+  <ellipse cx="580" cy="100" rx="56" ry="10" fill="#ffd28a"/>
+  <ellipse cx="580" cy="104" rx="120" ry="30" fill="#ffb347" opacity=".25" filter="url(#tsh)"/>
+  <!-- etichetta adesiva sul vetro -->
+  <g transform="translate(176 140) rotate(-3)">
+    <rect x="3" y="5" width="200" height="86" rx="14" fill="#000" opacity=".3" filter="url(#tsh)"/>
+    <rect width="200" height="86" rx="14" fill="#fff8ee"/>
+    <g transform="translate(11 11)"><g clip-path="url(#stk)"><image href="${u}" width="64" height="64"/></g></g>
+    <text x="86" y="38" font-family="Bricolage Grotesque, Inter, system-ui, sans-serif" font-weight="800" font-size="18" fill="#10261b">Pepe</text>
+    <text x="86" y="58" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#4d6556">Amel · maschio</text>
+    <text x="86" y="74" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#4d6556">SNAKEcheck</text>
+    <rect width="200" height="86" rx="14" fill="url(#trefl)" opacity=".6"/>
+  </g>
+  <!-- telefono appoggiato -->
+  <g transform="translate(760 196) rotate(-6)">
+    <rect x="6" y="16" width="134" height="258" rx="22" fill="#000" opacity=".5" filter="url(#tsh)"/>
+    <rect width="134" height="258" rx="22" fill="#0b0b0b"/>
+    <g transform="translate(6 6)"><g clip-path="url(#phs)">
+      <rect width="122" height="246" fill="#0d1f17"/>
+      <circle cx="61" cy="100" r="70" fill="#1d3a31"/>
+      <g transform="translate(26 70)"><g clip-path="url(#pic)"><image href="${u}" width="70" height="70"/></g></g>
+      <text x="61" y="172" text-anchor="middle" font-family="Bricolage Grotesque, Inter, system-ui, sans-serif" font-weight="800" font-size="15" fill="#eaf2e3">SNAKEcheck</text>
+      <rect x="31" y="186" width="60" height="3" rx="2" fill="#24453a"/><rect x="31" y="186" width="36" height="3" rx="2" fill="#9be15d"/>
+      <rect width="122" height="246" fill="url(#trefl)" opacity=".5"/>
+    </g></g>
+    <rect x="50" y="10" width="34" height="8" rx="4" fill="#000"/>
+  </g>
+  <!-- termometro digitale -->
+  <g transform="translate(686 380)"><rect width="52" height="70" rx="10" fill="#1d1f1e"/><rect x="7" y="9" width="38" height="24" rx="4" fill="#9be15d" opacity=".85"/><text x="26" y="27" text-anchor="middle" font-family="Inter, system-ui" font-weight="700" font-size="13" fill="#0d1f17">30,3</text></g>
+  </svg></div>`;
+}
+
+function renderPicker(){
+  $("#picker").innerHTML = INFO.map(i=>`<button class="chip" data-k="${i.n}" aria-pressed="${i.n===sel}"><img src="${url[i.n]}" alt="">#${i.n}</button>`).join("")
+   + `<span style="flex:1"></span><button class="btn" id="prev" aria-label="Logo precedente">←</button><button class="btn" id="next" aria-label="Logo successivo">→</button><button class="btn pri" id="auto" aria-pressed="false">Scorri tutti</button>`;
+}
+function renderScenes(){
+  $("#scenes").innerHTML = SCENES.map(s=>`<section class="scene ${s.wide?"wide":""}" id="luogo-${s.id}"><div class="stage">${s.r()}</div><div class="cap"><b>${s.t}</b><p>${s.d}</p></div></section>`).join("");
+}
+function select(k, scroll=false){
+  sel = k;
+  try { localStorage.setItem("snakecheck.icone.sel", k); } catch(e){}
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.k===k));
+  document.querySelectorAll(".scard").forEach(c=>c.classList.toggle("sel", c.dataset.k===k));
+  renderScenes();
+  $("#brandLogo").src = url[k];
+  if (scroll) document.getElementById("luoghi").scrollIntoView({behavior:"smooth"});
+}
+function step(d){ const i = ids.indexOf(sel); select(ids[(i+d+ids.length)%ids.length]); }
+
+renderPicker();
+$("#picker").addEventListener("click", e=>{
+  const c = e.target.closest(".chip"); if (c) return select(c.dataset.k);
+  if (e.target.id==="prev") step(-1);
+  if (e.target.id==="next") step(1);
+  if (e.target.id==="auto") toggleAuto(e.target);
+});
+let timer=null;
+function toggleAuto(b){ if(timer){clearInterval(timer);timer=null;b.textContent="Scorri tutti";b.setAttribute("aria-pressed","false");}
+  else {timer=setInterval(()=>step(1),1800);b.textContent="Ferma";b.setAttribute("aria-pressed","true");} }
+$("#gridScale").addEventListener("click", e=>{ const c=e.target.closest(".scard"); if(c) select(c.dataset.k,true); });
+$("#gridScale").addEventListener("keydown", e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("scard")){e.preventDefault();select(e.target.dataset.k,true);} });
+document.addEventListener("keydown", e=>{ if(e.target.closest("input,textarea")) return; if(e.key==="ArrowRight") step(1); if(e.key==="ArrowLeft") step(-1); });
+
+// ---------- Schede
+const stelle = v=>"●".repeat(v)+"○".repeat(5-v);
+$("#cards").innerHTML = INFO.map(i=>`
+ <article class="card" id="scheda-${i.n}">
+  <div class="top">${icoFix(i.n)}<div><div class="dir">#${i.n} · ${i.dir}</div><h3>${i.nome}</h3></div></div>
+  <div class="voti"><span>24 px <b>${stelle(i.voti[0])}</b></span><span>Riconoscibilità <b>${stelle(i.voti[1])}</b></span><span>Tema Giungla <b>${stelle(i.voti[2])}</b></span></div>
+  <dl><dt>Scelta visiva</dt><dd>${i.scelta}</dd><dt>Legame con l'app</dt><dd>${i.legame}</dd><dt>Piccole dimensioni</dt><dd>${i.piccole}</dd><dt>File</dt><dd><code>app-icons/logo-${i.n}.svg</code></dd></dl>
+  <div class="acts"><a class="btn" download="logo-${i.n}.svg" href="${url[i.n]}">Scarica SVG</a><button class="btn" data-png="${i.n}">Scarica PNG 512</button><button class="btn pri" data-use="${i.n}">Vedi nei luoghi</button></div>
+ </article>`).join("");
+$("#cards").addEventListener("click", e=>{
+  const u=e.target.closest("[data-use]"); if(u) return select(u.dataset.use,true);
+  const p=e.target.closest("[data-png]"); if(!p) return;
+  const k=p.dataset.png, img=new Image();
+  img.onload=()=>{const c=document.createElement("canvas");c.width=c.height=512;c.getContext("2d").drawImage(img,0,0,512,512);
+    const a=document.createElement("a");a.download=`logo-${k}-512.png`;a.href=c.toDataURL("image/png");a.click();};
+  img.src=url[k];
+});
+
+// palette
+$("#palette").innerHTML = [["#0d1f17","Notte (fondo)"],["#16302a","Bosco"],["#24453a","Muschio"],["#9be15d","Foglia (ok)"],["#ffb347","Lampada"],["#ff8a3d","Amel"],["#f2603a","Corallo"],["#d9372b","Sella"],["#fff1df","Crema"],["#b3192e","Occhio rubino"],["#7dd3fc","Acqua"]]
+  .map(([c,n])=>`<div><i style="background:${c}"></i>${n}<code style="margin-left:4px;opacity:.7">${c}</code></div>`).join("");
+
+// ---------- Controlli sfondo e maschera
+function seg(id, attr, key){
+  const el = $(id);
+  const set = v=>{ document.body.dataset[attr]=v; el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.v===v)); try{localStorage.setItem(key,v);}catch(e){} };
+  el.addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) set(b.dataset.v); });
+  let v = document.body.dataset[attr];
+  try { v = localStorage.getItem(key) || v; } catch(e){}
+  const q = new URLSearchParams(location.search).get(attr); if (q) v = q;
+  set(v);
+}
+seg("#segBg","bg","snakecheck.icone.bg");
+seg("#segMask","mask","snakecheck.icone.mask");
+const qs = new URLSearchParams(location.search).get("logo"); if (qs && url[qs]) sel = qs;
+select(sel);
+</script>
+</body>
+</html>
