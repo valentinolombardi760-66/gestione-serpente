@@ -12,7 +12,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SNAKEcheck">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='c' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23ffb347'/><stop offset='1' stop-color='%23f2603a'/></linearGradient></defs><rect width='512' height='512' rx='112' fill='%230d1f17'/><path d='M320 192A64 64 0 1 0 256 256A64 64 0 1 1 192 320' fill='none' stroke='url(%23c)' stroke-width='76' stroke-linecap='round'/><circle cx='334' cy='176' r='12' fill='%230d1f17'/></svg>">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
 <!-- Font Inter (se offline si usa il font di sistema) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -5348,7 +5349,7 @@ const Notify = (() => {
   async function show(title, body, tag) {
     try {
       const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
-      const opts = { body, tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: './index.html#dashboard' } };
+      const opts = { body, tag, icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: './index.html#dashboard' } };
       if (reg && reg.showNotification) await reg.showNotification(title, opts); else new Notification(title, opts);
     } catch (e) { console.warn('Notifica non mostrata', e); }
   }
