@@ -86,7 +86,7 @@ test('aggiornamento mirato: terrario e grafico non vengono ricreati', async ({ p
 
   await page.evaluate(() => Router.go('clima'));
   await expect(page.locator('#chart-env canvas')).toBeVisible();
-  await page.evaluate(() => { window.__cv = document.querySelector('#chart-env canvas'); Store.add('env', { datetime: Utils.nowLocal(), tempCalda: 31, tempFredda: 24, umidita: 52 }); });
+  await page.evaluate(() => { window.__cv = document.querySelector('#chart-env canvas'); Store.add('env', { datetime: Utils.nowLocal(), tempCalda: 31, tempFredda: 24, umiditaCalda: 50, umiditaFredda: 58 }); });
   expect(await page.evaluate(() => document.querySelector('#chart-env canvas') === window.__cv)).toBe(true);
   const rows = await page.locator('[data-rows="env"] tbody tr').count();
   expect(rows).toBeGreaterThan(0);

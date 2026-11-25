@@ -1470,6 +1470,7 @@ h1 { font-weight: 800; letter-spacing: -.03em; }
 .rd-txt b { display: flex; gap: 8px; align-items: center; font-size: .9rem; font-weight: 600; }
 .rd-txt small { display: block; font-size: .76rem; color: var(--faint); margin-top: 1px; }
 .rd-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.rd-grid.rd-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 340px) { .rd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .rd-grid .field-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-num .input { font-variant-numeric: tabular-nums; }
@@ -1652,6 +1653,14 @@ const Utils = (() => {
     const s = Number.isInteger(r) ? String(r) : r.toFixed(dec).replace('.', ',');
     return unit ? `${s}${unit === '%' || unit === '°' ? '' : ' '}${unit}` : s;
   };
+  /** Umidità di una lettura come testo breve: "UR calda 50% · fredda 60%" oppure "UR 55%" (lettura unica) */
+  const humText = e => {
+    const c = num(e.umiditaCalda), f = num(e.umiditaFredda), u = num(e.umidita);
+    if (c !== null && f !== null) return `UR calda ${fmtNum(c, '%')} · fredda ${fmtNum(f, '%')}`;
+    if (c !== null) return `UR calda ${fmtNum(c, '%')}`;
+    if (f !== null) return `UR fredda ${fmtNum(f, '%')}`;
+    return u !== null ? `UR ${fmtNum(u, '%')}` : '';
+  };
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -1681,7 +1690,7 @@ const Utils = (() => {
   const monthsSince = s => { const b = parse(s); if (!b) return null; const n = now(); let m = (n.getFullYear() - b.getFullYear()) * 12 + n.getMonth() - b.getMonth(); if (n.getDate() < b.getDate()) m--; return m < 0 ? null : m; };
   const weekday = s => { const d = parse(s); return d ? ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'][d.getDay()] : ''; };
 
-  return { now, at, pad, toISODate, toLocalDT, todayISO, nowLocal, parse, isValidDate, daysSince, daysBetween, addDays, hasTime, fmtDate, fmtDateShort, fmtTime, fmtDateTime, fmtAxis, plural, relDays, relTime, cap, age, num, round, fmtNum, esc, uid, clamp, reducedMotion, toDMY, fromDMY, normTime, monthsSince, weekday, DAY };
+  return { humText, now, at, pad, toISODate, toLocalDT, todayISO, nowLocal, parse, isValidDate, daysSince, daysBetween, addDays, hasTime, fmtDate, fmtDateShort, fmtTime, fmtDateTime, fmtAxis, plural, relDays, relTime, cap, age, num, round, fmtNum, esc, uid, clamp, reducedMotion, toDMY, fromDMY, normTime, monthsSince, weekday, DAY };
 })();
 
 /* ==========================================================================
@@ -1822,12 +1831,13 @@ const Schema = (() => {
   const LOGS = {
     env: {
       label: 'Lettura ambientale', g: 'f', short: 'Clima', icon: 'thermo', color: '#22d3ee', dateKey: 'datetime', view: 'clima',
-      desc: 'Temperature e umidità', atLeastOne: ['tempCalda', 'tempFredda', 'umidita', 'tempNotte'],
+      desc: 'Temperature e umidità', atLeastOne: ['tempCalda', 'tempFredda', 'umiditaCalda', 'umiditaFredda', 'umidita', 'tempNotte'],
       fields: [
         { name: 'datetime', label: 'Data e ora', type: 'datetime-local', required: true, full: true },
         { name: 'tempCalda', label: 'Zona calda', type: 'number', unit: '°C', step: '0.1', min: 0, max: 50, gauge: 'tempCalda' },
         { name: 'tempFredda', label: 'Zona fredda', type: 'number', unit: '°C', step: '0.1', min: 0, max: 50, gauge: 'tempFredda' },
-        { name: 'umidita', label: 'Umidità relativa', type: 'number', unit: '%', step: '1', min: 0, max: 100, gauge: 'umidita' },
+        { name: 'umiditaCalda', label: 'Umidità zona calda', type: 'number', unit: '%', step: '1', min: 0, max: 100, gauge: 'umiditaCalda' },
+        { name: 'umiditaFredda', label: 'Umidità zona fredda', type: 'number', unit: '%', step: '1', min: 0, max: 100, gauge: 'umiditaFredda' },
         { name: 'tempNotte', label: 'Minima notturna', type: 'number', unit: '°C', step: '0.1', min: 0, max: 50, gauge: 'tempNotte' },
         { name: 'note', label: 'Note', type: 'textarea', full: true, placeholder: 'Es. dopo nebulizzazione' }
       ]
@@ -1980,7 +1990,7 @@ const Schema = (() => {
   /** Nomi alternativi accettati in import/migrazione (vecchi backup o file scritti a mano) */
   const ALIASES = {
     _common: { date: 'data', giorno: 'data', notes: 'note', nota: 'note', notas: 'note', comment: 'note' },
-    env: { date: 'datetime', data: 'datetime', dataOra: 'datetime', timestamp: 'datetime', dateTime: 'datetime', temperaturaCalda: 'tempCalda', hot: 'tempCalda', tempHot: 'tempCalda', temperaturaFredda: 'tempFredda', cold: 'tempFredda', tempCold: 'tempFredda', humidity: 'umidita', umidità: 'umidita', ur: 'umidita', night: 'tempNotte', notte: 'tempNotte' },
+    env: { date: 'datetime', data: 'datetime', dataOra: 'datetime', timestamp: 'datetime', dateTime: 'datetime', temperaturaCalda: 'tempCalda', hot: 'tempCalda', tempHot: 'tempCalda', temperaturaFredda: 'tempFredda', cold: 'tempFredda', tempCold: 'tempFredda', humidity: 'umidita', umidità: 'umidita', ur: 'umidita', umiditàCalda: 'umiditaCalda', urCalda: 'umiditaCalda', humidityHot: 'umiditaCalda', umiditàFredda: 'umiditaFredda', urFredda: 'umiditaFredda', humidityCold: 'umiditaFredda', night: 'tempNotte', notte: 'tempNotte' },
     feeding: { prey: 'preda', tipoPreda: 'preda', preyWeight: 'pesoPreda', peso: 'pesoPreda', preyState: 'statoPreda', outcome: 'esito', result: 'esito' },
     growth: { weight: 'peso', length: 'lunghezza' },
     shed: { start: 'dataInizio', inizio: 'dataInizio', data: 'dataInizio', end: 'dataFine', fine: 'dataFine', outcome: 'esito', eyecaps: 'occhi' },
@@ -2075,6 +2085,11 @@ const Store = (() => {
       }
       if (f.required && (v === null || v === '')) { lastReason = `manca "${f.label.toLowerCase()}"`; return null; }
       out[f.name] = v;
+    }
+    if (type === 'env') {
+      // Umidità unica (letture vecchie o senza zona): resta solo se mancano i valori per zona
+      const u = Utils.num(src.umidita);
+      out.umidita = out.umiditaCalda === null && out.umiditaFredda === null && u !== null && u >= 0 && u <= 100 ? u : null;
     }
     if (def.atLeastOne && def.atLeastOne.every(k => out[k] === null || out[k] === '')) { lastReason = 'nessun valore misurato'; return null; }
     if (typeof src._m === 'string' && /^\d{4}-\d\d-\d\dT/.test(src._m)) out._m = src._m.slice(0, 30);
@@ -2694,13 +2709,32 @@ const Logic = (() => {
   const RANGES = {
     tempCalda: { label: 'Zona calda', unit: '°C', icon: 'flame', min: 'tempCaldaMin', max: 'tempCaldaMax' },
     tempFredda: { label: 'Zona fredda', unit: '°C', icon: 'snow', min: 'tempFreddaMin', max: 'tempFreddaMax' },
-    umidita: { label: 'Umidità', unit: '%', icon: 'drop', min: 'umiditaMin', max: 'umiditaMax' },
-    tempNotte: { label: 'Notte', unit: '°C', icon: 'moon', min: 'tempNotteMin', max: 'tempNotteMax', optional: true }
+    umiditaCalda: { label: 'Umidità zona calda', unit: '%', icon: 'drop', min: 'umiditaMin', max: 'umiditaMax' },
+    umiditaFredda: { label: 'Umidità zona fredda', unit: '%', icon: 'drop', min: 'umiditaMin', max: 'umiditaMax' },
+    tempNotte: { label: 'Notte', unit: '°C', icon: 'moon', min: 'tempNotteMin', max: 'tempNotteMax', optional: true },
+    umidita: { label: 'Umidità', unit: '%', icon: 'drop', min: 'umiditaMin', max: 'umiditaMax', legacy: true }
   };
-  const ENV_KEYS = Object.keys(RANGES);
+  /** Parametri mostrati (indicatori, avvisi, terrario); "umidita" è solo la vecchia lettura unica */
+  const ENV_KEYS = Object.keys(RANGES).filter(k => !RANGES[k].legacy);
+  const isHum = k => k.startsWith('umidita');
+  const HUM_KEYS = ['umiditaCalda', 'umiditaFredda'];
+  /** true se la lettura ha solo l'umidità unica (senza zona) */
+  const humLegacy = e => !!e && e.umiditaCalda == null && e.umiditaFredda == null && e.umidita != null;
+  /** Valore di un parametro in una lettura: per le zone usa l'umidità unica delle letture vecchie */
+  const envVal = (e, k) => {
+    if (!e) return null;
+    if (HUM_KEYS.includes(k) && humLegacy(e)) return Utils.num(e.umidita);
+    const v = e[k];
+    return v === undefined || v === '' ? null : Utils.num(v);
+  };
+  /** Umidità complessiva di una lettura: media delle due zone oppure valore unico */
+  const humOf = e => {
+    const v = HUM_KEYS.map(k => Utils.num(e[k])).filter(x => x !== null);
+    return v.length ? Utils.round(v.reduce((a, b) => a + b, 0) / v.length, 0) : Utils.num(e.umidita);
+  };
   const range = k => {
     const r = RANGES[k];
-    if (k !== 'umidita' && brumState().active) return { ...r, lo: Utils.num(P().brumTempMin), hi: Utils.num(P().brumTempMax), brum: true };
+    if (!isHum(k) && brumState().active) return { ...r, lo: Utils.num(P().brumTempMin), hi: Utils.num(P().brumTempMax), brum: true };
     return { ...r, lo: Utils.num(P()[r.min]), hi: Utils.num(P()[r.max]) };
   };
   const evalParam = (k, value) => {
@@ -2709,7 +2743,7 @@ const Logic = (() => {
     const { lo, hi } = range(k);
     if (lo !== null && v < lo) return { status: 'bad', label: 'Basso' };
     if (hi !== null && v > hi) return { status: 'bad', label: 'Alto' };
-    const margin = k === 'umidita' ? 3 : 0.5;
+    const margin = isHum(k) ? 3 : 0.5;
     if ((lo !== null && v - lo < margin) || (hi !== null && hi - v < margin)) return { status: 'warn', label: 'Al limite' };
     return { status: 'ok', label: 'Ottimale' };
   };
@@ -2717,8 +2751,8 @@ const Logic = (() => {
   function envNow() {
     const out = { latest: L().env[0] || null };
     for (const k of ENV_KEYS) {
-      const e = L().env.find(x => x[k] !== null && x[k] !== undefined && x[k] !== '');
-      out[k] = e ? { v: Utils.num(e[k]), dt: e.datetime } : null;
+      const e = L().env.find(x => envVal(x, k) !== null);
+      out[k] = e ? { v: envVal(e, k), dt: e.datetime, legacy: HUM_KEYS.includes(k) && humLegacy(e) } : null;
     }
     return out;
   }
@@ -2735,7 +2769,7 @@ const Logic = (() => {
   function shedHumidity(s) {
     const end = s.dataFine || s.dataInizio;
     const from = Utils.toISODate(Utils.addDays(Utils.parse(end), -7));
-    const v = L().env.filter(e => e.umidita !== null && e.datetime.slice(0, 10) >= from && e.datetime.slice(0, 10) <= end).map(e => e.umidita);
+    const v = L().env.filter(e => e.datetime.slice(0, 10) >= from && e.datetime.slice(0, 10) <= end).map(humOf).filter(x => x !== null);
     return v.length ? Utils.round(v.reduce((a, b) => a + b, 0) / v.length, 0) : null;
   }
 
@@ -3057,7 +3091,7 @@ const Logic = (() => {
     if (water.days === 0) tasks.push({ id: 'water', icon: 'drop', title: 'Acqua cambiata', sub: 'oggi', done: true });
     else if (water.remaining === null || water.remaining <= 0) tasks.push({ id: 'water', icon: 'drop', title: 'Cambia l\'acqua', sub: water.last ? `ultimo cambio ${Utils.relDays(water.days)}` : 'nessun cambio registrato', level: water.remaining !== null && water.remaining < 0 ? 'bad' : 'warn', action: { kind: 'water', label: 'Fatto' } });
     const readToday = L().env.find(e => e.datetime.slice(0, 10) === t);
-    if (readToday) tasks.push({ id: 'env', icon: 'thermo', title: 'Clima controllato', sub: [now.tempCalda && Utils.fmtNum(now.tempCalda.v, '°'), now.tempFredda && Utils.fmtNum(now.tempFredda.v, '°'), now.umidita && Utils.fmtNum(now.umidita.v, '%')].filter(Boolean).join(' · '), done: true });
+    if (readToday) tasks.push({ id: 'env', icon: 'thermo', title: 'Clima controllato', sub: [now.tempCalda && Utils.fmtNum(now.tempCalda.v, '°'), now.tempFredda && Utils.fmtNum(now.tempFredda.v, '°'), now.umiditaCalda && now.umiditaFredda && !now.umiditaCalda.legacy ? `UR ${Utils.fmtNum(now.umiditaCalda.v)}/${Utils.fmtNum(now.umiditaFredda.v, '%')}` : (now.umiditaCalda || now.umiditaFredda) && 'UR ' + Utils.fmtNum((now.umiditaCalda || now.umiditaFredda).v, '%')].filter(Boolean).join(' · '), done: true });
     else tasks.push({ id: 'env', icon: 'thermo', title: 'Controlla temperature e umidità', sub: now.latest ? `ultima lettura ${Utils.relTime(now.latest.datetime)}` : 'nessuna lettura', level: 'info', action: { kind: 'form', type: 'env', label: 'Registra' } });
     if (clean.days === 0) tasks.push({ id: 'clean', icon: 'sparkles', title: 'Pulizia fatta', sub: 'oggi', done: true });
     else if (clean.remaining === null || clean.remaining <= 0) tasks.push({ id: 'clean', icon: 'sparkles', title: 'Rimuovi feci e sporco', sub: clean.last ? `ultima pulizia ${Utils.relDays(clean.days)}` : 'controlla il substrato', level: 'info', action: { kind: 'clean', label: 'Fatto' } });
@@ -3229,7 +3263,7 @@ const Logic = (() => {
     return out;
   }
 
-  return { predictions, agenda, weightModel, preyForWeight, stockState, expenseSummary, lifeEvents, currentWeight, currentLength, weightAt, ratio, ratioStatus, ratioLabel, RANGES, ENV_KEYS, range, evalParam, envNow, shedState, inShedOn, shedHumidity, feedingState, suggestedInterval, targetInterval, refusals, lastMealTemplate, waterState, cleanState, weightTrend, weightLoss, expectedWeight, monthsAt, brumState, medState, activeMeds, openSymptoms, alerts, todayTasks, headline, achievements };
+  return { predictions, agenda, weightModel, preyForWeight, stockState, expenseSummary, lifeEvents, currentWeight, currentLength, weightAt, ratio, ratioStatus, ratioLabel, RANGES, ENV_KEYS, HUM_KEYS, isHum, humLegacy, envVal, humOf, range, evalParam, envNow, shedState, inShedOn, shedHumidity, feedingState, suggestedInterval, targetInterval, refusals, lastMealTemplate, waterState, cleanState, weightTrend, weightLoss, expectedWeight, monthsAt, brumState, medState, activeMeds, openSymptoms, alerts, todayTasks, headline, achievements };
 })();
 
 /* ==========================================================================
@@ -3899,13 +3933,17 @@ const Records = (() => {
     muta: { Completa: 'ok', 'Incompleta / a pezzi': 'warn', 'In corso': 'info' },
     comp: { 'Tranquillo / Curioso': 'ok', 'Timido / Nascosto': 'info', 'Difensivo / Soffia': 'warn', Agitato: 'bad' }
   };
-  const envCell = (e, k) => { const ev = Logic.evalParam(k, e[k]); return `<span class="c-${ev.status}">${Utils.fmtNum(e[k], Logic.RANGES[k].unit)}</span>`; };
+  const envCell = (e, k) => {
+    const v = Logic.envVal(e, k), ev = Logic.evalParam(k, v);
+    if (Logic.HUM_KEYS.includes(k) && Logic.humLegacy(e)) return `<span class="c-${ev.status}" title="Lettura unica, zona non indicata">${Utils.fmtNum(v, '%')}<span class="sub">unica</span></span>`;
+    return `<span class="c-${ev.status}">${Utils.fmtNum(v, Logic.RANGES[k].unit)}</span>`;
+  };
 
   /** Colonne per registro: [label, html(e), classe] — la prima è il titolo della card su mobile */
   const COLS = {
     env: { filter: null, cols: [
       ['Data e ora', e => `${Utils.fmtDateTime(e.datetime)}<span class="sub">${Utils.relTime(e.datetime)}</span>`],
-      ['Calda', e => envCell(e, 'tempCalda')], ['Fredda', e => envCell(e, 'tempFredda')], ['Umidità', e => envCell(e, 'umidita')], ['Notte', e => envCell(e, 'tempNotte')],
+      ['Calda', e => envCell(e, 'tempCalda')], ['Fredda', e => envCell(e, 'tempFredda')], ['UR calda', e => envCell(e, 'umiditaCalda')], ['UR fredda', e => envCell(e, 'umiditaFredda')], ['Notte', e => envCell(e, 'tempNotte')],
       ['Note', e => Utils.esc(e.note), 'cell-notes']] },
     feeding: { filter: { field: 'esito', options: Schema.OPTIONS.esitoPasto }, cols: [
       ['Data', e => `${Utils.fmtDate(e.data)}<span class="sub">${Utils.relDays(Utils.daysSince(e.data))}</span>`],
@@ -4678,7 +4716,8 @@ const Terrarium = (() => {
   const HOT = {
     tempFredda: { x: 118, y: 150, icon: 'snow' },
     tempCalda: { x: 682, y: 170, icon: 'flame' },
-    umidita: { x: 262, y: 322, icon: 'drop' }
+    umiditaFredda: { x: 118, y: 252, icon: 'drop' },
+    umiditaCalda: { x: 682, y: 304, icon: 'drop' }
   };
   /** Fase del giorno secondo l'orario delle luci impostato */
   function phase() {
@@ -4714,9 +4753,9 @@ const Terrarium = (() => {
     const spots = Object.entries(HOT).map(([k, pos]) => {
       const cur = now[k];
       const r = Logic.range(k), ev = Logic.evalParam(k, cur ? cur.v : null), c = colorOf(ev.status);
-      const val = cur ? Utils.fmtNum(cur.v, k === 'umidita' ? '%' : '°') : '—';
-      const chipW = 124, PIN = { tempCalda: 'LATO CALDO', tempFredda: 'LATO FREDDO', umidita: 'UMIDITÀ' }[k];
-      const left = k === 'tempCalda';
+      const val = cur ? Utils.fmtNum(cur.v, Logic.isHum(k) ? '%' : '°') : '—';
+      const chipW = Logic.isHum(k) ? 136 : 124, PIN = { tempCalda: 'LATO CALDO', tempFredda: 'LATO FREDDO', umiditaCalda: 'UMIDITÀ CALDA', umiditaFredda: 'UMIDITÀ FREDDA' }[k];
+      const left = k === 'tempCalda' || k === 'umiditaCalda';
       btns.push(`<button type="button" class="hs-btn${left ? ' hs-left' : ''}" data-hotspot="${k}" aria-label="${r.label}: ${val}, ${ev.label}" style="left:${pos.x / VB.w * 100}%;top:${pos.y / VB.h * 100}%;--chip:${(chipW + 40) / VB.w * 100}%"></button>`);
       return `<g class="hotspot" data-hs="${k}" transform="translate(${pos.x} ${pos.y})" pointer-events="none"><g class="pin-g${left ? ' pin-l' : ''}">
           <circle class="hs-ring" r="20" fill="none" stroke="${c}" stroke-width="2"/>
@@ -4838,12 +4877,13 @@ const Terrarium = (() => {
       ${env ? `<div class="row" style="gap:10px;margin-bottom:10px"><span class="pop-val c-${ev.status}">${Utils.fmtNum(v, r.unit)}</span><span class="badge b-${ev.status}">${ev.label}</span></div>
         <div class="gauge-track" style="height:8px"><div class="gauge-band" style="left:${pos(r.lo)}%;width:${pos(r.hi) - pos(r.lo)}%"></div><div class="gauge-pos" style="--x:${v === null ? 50 : Utils.round(pos(v), 2)}"><div class="gauge-marker" style="color:${colorOf(ev.status)};width:14px;height:14px"></div></div></div>
         <p class="faint small" style="margin-top:10px">${r.brum ? 'Invernale' : 'Ottimale'} <b class="muted">${Utils.fmtNum(r.lo)}–${Utils.fmtNum(r.hi)} ${r.unit}</b> · lettura ${Utils.relTime(env.datetime)}<br>${Utils.fmtDateTime(env.datetime)}</p>
+        ${cur.legacy ? '<p class="faint small" style="margin-top:6px">Lettura unica, senza zona: dalla prossima registra calda e fredda separate.</p>' : ''}
         ${key === 'tempFredda' && night ? `<p class="faint small" style="margin-top:6px">${I('moon')} Minima notturna <b class="c-${nightEv.status}">${Utils.fmtNum(night.v, '°C')}</b> · ${Utils.relTime(night.dt)}</p>` : ''}`
         : `<p class="muted small">Nessuna lettura registrata. Range ottimale ${Utils.fmtNum(r.lo)}–${Utils.fmtNum(r.hi)} ${r.unit}.</p>`}
-      ${key === 'umidita' ? `<p class="faint small" style="margin-top:6px">💧 Acqua cambiata ${water.last ? `<b class="c-${water.status}">${Utils.relDays(water.days)}</b>` : '<b>mai</b>'} · ogni ${water.target} giorni</p>` : ''}
+      ${Logic.isHum(key) ? `<p class="faint small" style="margin-top:6px">💧 Acqua cambiata ${water.last ? `<b class="c-${water.status}">${Utils.relDays(water.days)}</b>` : '<b>mai</b>'} · ogni ${water.target} giorni</p>` : ''}
       <div class="row" style="margin-top:12px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" data-add="env">${I('plus')} Nuova lettura</button>
-        ${key === 'umidita' ? `<button class="btn btn-sm" data-water>${I('check')} Acqua cambiata</button>` : ''}
+        ${Logic.isHum(key) ? `<button class="btn btn-sm" data-water>${I('check')} Acqua cambiata</button>` : ''}
       </div>`;
     pop.classList.remove('hidden');
     // Posizionamento accanto all'hotspot, entro i bordi del contenitore
@@ -5046,7 +5086,7 @@ const Photos = (() => {
    CSVImport — letture da termoigrometri e sensori (file CSV esportati)
    ========================================================================== */
 const CSVImport = (() => {
-  const TARGETS = [['', 'Ignora'], ['tempCalda', 'Zona calda'], ['tempFredda', 'Zona fredda'], ['umidita', 'Umidità'], ['tempNotte', 'Notte']];
+  const TARGETS = [['', 'Ignora'], ['tempCalda', 'Zona calda'], ['tempFredda', 'Zona fredda'], ['umiditaCalda', 'Umidità zona calda'], ['umiditaFredda', 'Umidità zona fredda'], ['umidita', 'Umidità (unica)'], ['tempNotte', 'Notte']];
 
   function splitLine(line, sep) {
     const out = []; let cur = '', q = false;
@@ -5100,13 +5140,16 @@ const CSVImport = (() => {
       const lh = lower[i];
       const f = /°f|\(f\)|fahrenheit|_f\b|\bf\b/.test(lh);
       let target = '';
-      if (/hum|umid|rh|%/.test(lh)) target = 'umidita';
+      if (/hum|umid|rh|%/.test(lh)) target = /fredd|cold|cool/.test(lh) ? 'umiditaFredda' : /cald|hot|warm/.test(lh) ? 'umiditaCalda' : 'umidita';
       else if (/temp|°c|°f|celsius|fahrenheit/.test(lh)) target = /fredd|cold|cool/.test(lh) ? 'tempFredda' : /nott|night/.test(lh) ? 'tempNotte' : 'tempCalda';
       return { i, name: h || `Colonna ${i + 1}`, target, f, sample: nums[0] };
     }).filter(Boolean);
     // Se ci sono due temperature senza nome chiaro, la seconda va alla zona fredda
     const temps = cols.filter(c => c.target === 'tempCalda');
     if (temps.length > 1) temps.slice(1).forEach(c => { c.target = 'tempFredda'; });
+    // Due umidità senza zona: la prima è la zona calda, la seconda la fredda
+    const hums = cols.filter(c => c.target === 'umidita');
+    if (hums.length > 1) { hums[0].target = 'umiditaCalda'; hums.slice(1).forEach(c => { c.target = 'umiditaFredda'; }); }
     return { dateCol, timeCol, dmy, cols };
   }
   /** Raggruppa per intervallo (ore) e fa la media */
@@ -5121,7 +5164,7 @@ const CSVImport = (() => {
       for (const c of a.cols) {
         const t = mapping[c.i]; if (!t) continue;
         let v = Utils.num(r[c.i]); if (v === null) continue;
-        if (c.f && t !== 'umidita') v = (v - 32) * 5 / 9;
+        if (c.f && !t.startsWith('umidita')) v = (v - 32) * 5 / 9;
         b.sums[t] = (b.sums[t] || 0) + v; b.n[t] = (b.n[t] || 0) + 1;
       }
       buckets.set(k, b);
@@ -5131,7 +5174,7 @@ const CSVImport = (() => {
     for (const b of buckets.values()) {
       const e = { datetime: Utils.toLocalDT(b.d), note: 'Importata da CSV' };
       let any = false;
-      for (const t of ['tempCalda', 'tempFredda', 'umidita', 'tempNotte']) { e[t] = b.n[t] ? Utils.round(b.sums[t] / b.n[t], t === 'umidita' ? 0 : 1) : null; if (e[t] !== null) any = true; }
+      for (const t of ['tempCalda', 'tempFredda', 'umiditaCalda', 'umiditaFredda', 'umidita', 'tempNotte']) { e[t] = b.n[t] ? Utils.round(b.sums[t] / b.n[t], t.startsWith('umidita') ? 0 : 1) : null; if (e[t] !== null) any = true; }
       if (any && !existing.has(e.datetime)) out.push(e);
     }
     return { entries: out.sort((x, y) => x.datetime.localeCompare(y.datetime)), bad };
@@ -5213,7 +5256,7 @@ const VetSheet = (() => {
       <h2>Alimentazione</h2><p>${feed.filter(f => f.esito === 'Mangiato').length} pasti consumati su ${feed.length} offerti · intervallo attuale ${Logic.targetInterval()} giorni</p>
       ${table(['Data', 'Preda', 'Peso preda', 'Rapporto', 'Esito'], feed.map(f => [Utils.toDMY(f.data), esc(f.preda) + ' · ' + esc(f.statoPreda), Utils.fmtNum(f.pesoPreda, 'g'), Utils.fmtNum(f.rapporto, '%'), esc(f.esito)]))}
       <h2>Mute</h2>${table(['Inizio', 'Fine', 'Esito', 'Occhialini', 'Umidità 7 gg prima'], in90(L.shed, 'dataInizio').map(s => [Utils.toDMY(s.dataInizio), Utils.toDMY(s.dataFine) || '—', esc(s.esito), esc(s.occhi || '—'), (h => h === null ? '—' : h + '%')(Logic.shedHumidity(s))]))}
-      <h2>Clima (90 giorni)</h2><p>Zona calda ${envStats('tempCalda')} °C · zona fredda ${envStats('tempFredda')} °C · notte ${envStats('tempNotte')} °C · umidità ${envStats('umidita')} %</p>
+      <h2>Clima (90 giorni)</h2><p>Zona calda ${envStats('tempCalda')} °C · zona fredda ${envStats('tempFredda')} °C · notte ${envStats('tempNotte')} °C · umidità zona calda ${envStats('umiditaCalda')} % · umidità zona fredda ${envStats('umiditaFredda')} %${L.env.some(Logic.humLegacy) ? ` · umidità unica (letture senza zona) ${envStats('umidita')} %` : ''}</p>
       <h2>Feci e urati</h2><p>${in90(L.waste, 'data').length} evacuazioni registrate${wasteAb.length ? `, ${wasteAb.length} anomale` : ''}.</p>
       ${wasteAb.length ? table(['Data', 'Tipo', 'Aspetto', 'Note'], wasteAb.map(x => [Utils.toDMY(x.data), esc(x.tipo), esc(x.aspetto), esc(x.note)])) : ''}
       <h2>Sintomi</h2>${table(['Data', 'Area', 'Gravità', 'Stato', 'Descrizione'], in90(L.symptom, 'data').concat(L.symptom.filter(s => s.stato === 'Aperto' && s.data < from)).map(s => [Utils.toDMY(s.data), esc(s.area), esc(s.gravita), esc(s.stato), esc(s.note)]))}
@@ -5276,7 +5319,7 @@ const Search = (() => {
   }
   const summary = (t, e) => {
     switch (t) {
-      case 'env': return [e.tempCalda !== null ? 'calda ' + Utils.fmtNum(e.tempCalda, '°C') : '', e.tempFredda !== null ? 'fredda ' + Utils.fmtNum(e.tempFredda, '°C') : '', e.umidita !== null ? 'UR ' + Utils.fmtNum(e.umidita, '%') : ''].filter(Boolean).join(' · ');
+      case 'env': return [e.tempCalda !== null ? 'calda ' + Utils.fmtNum(e.tempCalda, '°C') : '', e.tempFredda !== null ? 'fredda ' + Utils.fmtNum(e.tempFredda, '°C') : '', Utils.humText(e)].filter(Boolean).join(' · ');
       case 'feeding': return `${e.preda}${Utils.num(e.pesoPreda) !== null ? ' ' + Utils.fmtNum(e.pesoPreda, 'g') : ''} · ${e.esito}`;
       case 'growth': return [e.peso !== null ? Utils.fmtNum(e.peso, 'g') : '', e.lunghezza !== null ? Utils.fmtNum(e.lunghezza, 'cm') : ''].filter(Boolean).join(' · ');
       case 'shed': return `${e.esito}${e.occhi ? ' · ' + e.occhi.toLowerCase() : ''}`;
@@ -5631,7 +5674,7 @@ const Views = (() => {
           ${cur ? `<div class="gauge-pos" style="--x:${Utils.round(pos(v), 2)}"><div class="gauge-marker" style="color:${color}"></div></div>` : ''}
         </div>
         <div class="gauge-scale"><span>${Utils.fmtNum(dMin)}</span><span style="left:${pos(r.lo)}%">${Utils.fmtNum(r.lo)}</span><span style="left:${pos(r.hi)}%">${Utils.fmtNum(r.hi)}</span><span>${Utils.fmtNum(dMax)}${r.unit}</span></div>
-        ${cur && cur.dt !== now.latest.datetime ? `<div class="faint small">lettura ${Utils.relTime(cur.dt)}</div>` : ''}
+        ${cur && cur.legacy ? `<div class="faint small">lettura unica, senza zona${cur.dt !== now.latest.datetime ? ` · ${Utils.relTime(cur.dt)}` : ''}</div>` : cur && cur.dt !== now.latest.datetime ? `<div class="faint small">lettura ${Utils.relTime(cur.dt)}</div>` : ''}
       </div>`;
     }).join('')}<p class="faint small">Ultima lettura: ${Utils.fmtDateTime(now.latest.datetime)} · ${Utils.relTime(now.latest.datetime)}</p></div>`;
   }
@@ -5649,7 +5692,7 @@ const Views = (() => {
   function timeline(limit = 12) {
     const items = [];
     const desc = {
-      env: e => [[e.tempCalda !== null ? Utils.fmtNum(e.tempCalda, '°C') : '', e.tempFredda !== null ? Utils.fmtNum(e.tempFredda, '°C') : '', e.umidita !== null ? 'UR ' + Utils.fmtNum(e.umidita, '%') : ''].filter(Boolean).join(' / '), (() => { const bad = Logic.ENV_KEYS.some(k => Logic.evalParam(k, e[k]).status === 'bad'); return Records.badge(bad ? 'Fuori soglia' : 'Ottimale', bad ? 'bad' : 'ok'); })()],
+      env: e => [[e.tempCalda !== null ? Utils.fmtNum(e.tempCalda, '°C') : '', e.tempFredda !== null ? Utils.fmtNum(e.tempFredda, '°C') : '', Utils.humText(e)].filter(Boolean).join(' / '), (() => { const bad = Logic.ENV_KEYS.some(k => Logic.evalParam(k, Logic.envVal(e, k)).status === 'bad'); return Records.badge(bad ? 'Fuori soglia' : 'Ottimale', bad ? 'bad' : 'ok'); })()],
       feeding: e => [`${e.preda}${Utils.num(e.pesoPreda) !== null ? ' · ' + Utils.fmtNum(e.pesoPreda, 'g') : ''} · ${e.statoPreda}`, Records.badge(e.esito, Records.STATUS.esito[e.esito] || 'neutral')],
       growth: e => [[e.peso !== null ? Utils.fmtNum(e.peso, 'g') : '', e.lunghezza !== null ? Utils.fmtNum(e.lunghezza, 'cm') : ''].filter(Boolean).join(' · '), ''],
       shed: e => [e.dataFine ? `Completata il ${Utils.fmtDate(e.dataFine)}` : e.esito === 'In corso' ? 'Fase opaca iniziata' : 'Conclusa', Records.badge(e.esito, Records.STATUS.muta[e.esito] || 'neutral')],
@@ -5808,13 +5851,15 @@ const Views = (() => {
         <div class="card"><div class="card-head"><h2>Ultimi valori</h2><button class="btn btn-sm" data-add="env">${I('plus')} Lettura</button></div>${gauges()}</div>
       </div>
       <div class="card mt"><div class="card-head"><h2>Storico letture</h2><div class="row"><button class="btn btn-sm" data-csv>${I('table')} Importa CSV</button></div></div>
-        <p class="faint small" style="margin:-6px 0 12px">Calda ${Utils.fmtNum(p.tempCaldaMin)}–${Utils.fmtNum(p.tempCaldaMax)}°C · Fredda ${Utils.fmtNum(p.tempFreddaMin)}–${Utils.fmtNum(p.tempFreddaMax)}°C · Notte ${Utils.fmtNum(p.tempNotteMin)}–${Utils.fmtNum(p.tempNotteMax)}°C · UR ${Utils.fmtNum(p.umiditaMin)}–${Utils.fmtNum(p.umiditaMax)}%</p>
+        <p class="faint small" style="margin:-6px 0 12px">Calda ${Utils.fmtNum(p.tempCaldaMin)}–${Utils.fmtNum(p.tempCaldaMax)}°C · Fredda ${Utils.fmtNum(p.tempFreddaMin)}–${Utils.fmtNum(p.tempFreddaMax)}°C · Notte ${Utils.fmtNum(p.tempNotteMin)}–${Utils.fmtNum(p.tempNotteMax)}°C · UR (calda e fredda) ${Utils.fmtNum(p.umiditaMin)}–${Utils.fmtNum(p.umiditaMax)}%</p>
         ${Records.block('env')}</div>`;
     Charts.line('env', $('#chart-env'), data.map(e => Utils.fmtAxis(e.datetime)), [
       { label: 'Zona calda', data: data.map(e => e.tempCalda), color: '#ffb347', unit: '°C', fillAlpha: .14 },
       { label: 'Zona fredda', data: data.map(e => e.tempFredda), color: '#7dd3fc', unit: '°C', fillAlpha: .08 },
       ...(hasNight ? [{ label: 'Notte', data: data.map(e => e.tempNotte), color: '#c4b5fd', unit: '°C', fill: false }] : []),
-      { label: 'Umidità', data: data.map(e => e.umidita), color: '#9be15d', axis: 'y1', unit: '%', fillAlpha: .06 }
+      { label: 'UR calda', data: data.map(e => e.umiditaCalda), color: '#9be15d', axis: 'y1', unit: '%', fillAlpha: .06 },
+      { label: 'UR fredda', data: data.map(e => e.umiditaFredda), color: '#2dd4bf', axis: 'y1', unit: '%', fill: false },
+      ...(data.some(Logic.humLegacy) ? [{ label: 'UR unica', data: data.map(e => Logic.humLegacy(e) ? e.umidita : null), color: '#a3a3a3', axis: 'y1', unit: '%', fill: false }] : [])
     ], { yTitle: '°C', y1Title: '%', emptyMsg: 'Registra delle letture o allarga l\'intervallo.', addType: 'env', band: { min: hot.lo, max: hot.hi, axis: 'y', color: 'rgba(74,222,128,0.09)' } });
   }
 
@@ -6047,7 +6092,7 @@ const Views = (() => {
             ${f('tempFreddaMin', 'Zona fredda min', 'type="number" step="0.1"', '°C')}${f('tempFreddaMax', 'Zona fredda max', 'type="number" step="0.1"', '°C')}
             ${f('tempNotteMin', 'Notte min', 'type="number" step="0.1"', '°C')}${f('tempNotteMax', 'Notte max', 'type="number" step="0.1"', '°C')}
             ${f('umiditaMin', 'Umidità min', 'type="number" step="1" min="0" max="100"', '%')}${f('umiditaMax', 'Umidità max', 'type="number" step="1" min="0" max="100"', '%')}
-          </div><p class="faint small" style="margin-top:10px">Valori indicativi: zona calda 29–32 °C, zona fredda 22–26 °C, notte 20–24 °C, umidità 40–60% (di più in pre-muta).</p></fieldset>
+          </div><p class="faint small" style="margin-top:10px">Valori indicativi: zona calda 29–32 °C, zona fredda 22–26 °C, notte 20–24 °C, umidità 40–60% in entrambe le zone (di più in pre-muta). La stessa soglia di umidità vale per zona calda e fredda.</p></fieldset>
           <fieldset style="margin-bottom:14px"><legend>${I('moon')} Brumazione</legend>
             <p class="faint small" style="margin-bottom:10px">Durante il periodo i pasti sono sospesi e le temperature si valutano con le soglie invernali. Lascia vuoto se non la fai.${brum.active ? ' <b class="c-info">Ora è attiva.</b>' : brum.upcoming !== null ? ` Inizia tra ${Utils.plural(brum.upcoming, 'giorno', 'giorni')}.` : ''}</p>
             <div class="form-grid">
@@ -6382,12 +6427,12 @@ const Round = (() => {
   function open() {
     const now = Logic.envNow(), w = Logic.waterState(), c = Logic.cleanState();
     const lastW = Logic.currentWeight();
-    const val = k => now[k] ? now[k].v : '';
+    const val = k => now[k] && !now[k].legacy ? now[k].v : '';
     const num = (name, label, unit, v, step = '0.1') => `<label class="field rd-num"><span class="field-label">${label}</span><div class="input-wrap"><input class="input" name="${name}" type="number" inputmode="decimal" step="${step}" value="${v}"><span class="unit">${unit}</span></div></label>`;
     const body = `<form id="roundForm" novalidate>
       <p class="faint small" style="margin-bottom:12px">Controlla e correggi i valori: viene salvato tutto insieme, con un solo "Annulla".</p>
       <div class="rd-sec">${sw('env', `${I('thermo')} Temperature e umidità`, now.latest ? `ultima lettura ${Utils.relTime(now.latest.datetime)}` : 'prima lettura', true)}
-        <div class="rd-grid">${num('tempCalda', 'Zona calda', '°C', val('tempCalda'))}${num('tempFredda', 'Zona fredda', '°C', val('tempFredda'))}${num('umidita', 'Umidità', '%', val('umidita'), '1')}</div></div>
+        <div class="rd-grid rd-grid-2">${num('tempCalda', 'Zona calda', '°C', val('tempCalda'))}${num('tempFredda', 'Zona fredda', '°C', val('tempFredda'))}${num('umiditaCalda', 'Umidità calda', '%', val('umiditaCalda'), '1')}${num('umiditaFredda', 'Umidità fredda', '%', val('umiditaFredda'), '1')}</div></div>
       <div class="rd-sec">${sw('water', `${I('drop')} Acqua cambiata`, w.days === 0 ? 'già registrata oggi' : w.last ? `ultimo cambio ${Utils.relDays(w.days)}` : 'mai registrata', w.days !== 0 && (w.remaining === null || w.remaining <= 0))}</div>
       <div class="rd-sec">${sw('clean', `${I('sparkles')} Pulizia veloce`, c.days === 0 ? 'già registrata oggi' : c.last ? `ultima ${Utils.relDays(c.days)}` : 'mai registrata', c.days !== 0 && (c.remaining === null || c.remaining <= 0))}</div>
       <div class="rd-sec">${sw('waste', `${I('waste')} Feci trovate`, 'tipo e aspetto', false)}
@@ -6408,8 +6453,8 @@ const Round = (() => {
     const f = form.elements, t = Utils.todayISO(), list = [];
     const n = name => Utils.num(f[name].value);
     if (f.env.checked) {
-      const d = { datetime: Utils.nowLocal(), tempCalda: n('tempCalda'), tempFredda: n('tempFredda'), umidita: n('umidita'), note: 'Giro di controllo' };
-      if ([d.tempCalda, d.tempFredda, d.umidita].some(v => v !== null)) list.push({ type: 'env', data: d });
+      const d = { datetime: Utils.nowLocal(), tempCalda: n('tempCalda'), tempFredda: n('tempFredda'), umiditaCalda: n('umiditaCalda'), umiditaFredda: n('umiditaFredda'), note: 'Giro di controllo' };
+      if ([d.tempCalda, d.tempFredda, d.umiditaCalda, d.umiditaFredda].some(v => v !== null)) list.push({ type: 'env', data: d });
     }
     if (f.water.checked) list.push({ type: 'maintenance', data: { data: t, tipo: 'Cambio acqua', note: '' } });
     if (f.clean.checked) list.push({ type: 'maintenance', data: { data: t, tipo: 'Spot cleaning', note: '' } });
@@ -6432,7 +6477,7 @@ const Round = (() => {
    Es. "pasto hopper 6 g ieri", "30,5 gradi 55%", "acqua", "peso 58", "vai a clima"
    ========================================================================== */
 const Cmd = (() => {
-  const EXAMPLES = ['ha mangiato hopper 6 g', 'calda 31 fredda 24 umidità 55%', 'acqua', 'peso 58 g', 'feci normali', 'inizio muta', 'vai a agenda'];
+  const EXAMPLES = ['ha mangiato hopper 6 g', 'calda 31 fredda 24 umidità calda 50 fredda 60', 'acqua', 'peso 58 g', 'feci normali', 'inizio muta', 'vai a agenda'];
   const WD = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
   const numRe = '(\\d+(?:[.,]\\d+)?)';
   const toNum = s => Utils.num(s);
@@ -6457,7 +6502,7 @@ const Cmd = (() => {
 
   /** Interpreta il testo: { kind: 'add'|'update'|'nav'|'search'|'round', ... } oppure null */
   function parse(raw) {
-    const t = ` ${String(raw || '').toLowerCase().replace(/\s+/g, ' ').trim()} `;
+    let t = ` ${String(raw || '').toLowerCase().replace(/\s+/g, ' ').trim()} `;
     if (t.trim().length < 2) return null;
     const date = whenOf(t);
     const views = Router.VIEWS;
@@ -6503,6 +6548,15 @@ const Cmd = (() => {
       return { kind: 'add', type: 'handling', data: { data: date, durata: mins ? +mins[1] : 10, comportamento: comp, note: '' } };
     }
     // Clima: temperature e umidità
+    // "umidità calda 50 fredda 60", "ur fredda 58%": umidità per zona (tolta dal testo prima delle temperature)
+    let humC = null, humF = null;
+    const zoneHum = new RegExp('(?:umidit[aà]|\\bur)\\s*(?:zona\\s*|lato\\s*)?(calda|caldo|fredda|freddo)\\s*:?\\s*' + numRe + '\\s*%?(?:\\s*(?:e\\s*)?(?:umidit[aà]\\s*|ur\\s*)?(?:zona\\s*|lato\\s*)?(calda|caldo|fredda|freddo)\\s*:?\\s*' + numRe + '\\s*%?)?');
+    const zm = t.match(zoneHum);
+    if (zm) {
+      const put = (z, v) => { if (/^cald/.test(z)) humC = toNum(v); else humF = toNum(v); };
+      put(zm[1], zm[2]); if (zm[3]) put(zm[3], zm[4]);
+      t = t.replace(zm[0], ' ');
+    }
     const kw = (re) => { const m = t.match(re); return m ? toNum(m[1]) : null; };
     let calda = kw(new RegExp('(?:calda|caldo|hot)\\s*:?\\s*' + numRe)), fredda = kw(new RegExp('(?:fredda|freddo|cold)\\s*:?\\s*' + numRe)), notte = kw(new RegExp('notte\\s*:?\\s*' + numRe));
     const hum = kw(new RegExp(numRe + '\\s*(?:%|percento)')) ?? kw(new RegExp('umidit[aà]\\s*:?\\s*' + numRe));
@@ -6510,9 +6564,9 @@ const Cmd = (() => {
       const temps = [...t.matchAll(new RegExp(numRe + '\\s*(?:°\\s*c?|gradi)', 'g'))].map(m => toNum(m[1]));
       if (temps.length) { calda = Math.max(...temps); if (temps.length > 1) fredda = Math.min(...temps); }
     }
-    if (calda !== null || fredda !== null || hum !== null || notte !== null) {
+    if (calda !== null || fredda !== null || hum !== null || humC !== null || humF !== null || notte !== null) {
       const tm = timeOf(t);
-      return { kind: 'add', type: 'env', data: { datetime: `${date}T${tm || (date === Utils.todayISO() ? Utils.nowLocal().slice(11, 16) : '12:00')}`, tempCalda: calda, tempFredda: fredda, umidita: hum, tempNotte: notte, note: '' } };
+      return { kind: 'add', type: 'env', data: { datetime: `${date}T${tm || (date === Utils.todayISO() ? Utils.nowLocal().slice(11, 16) : '12:00')}`, tempCalda: calda, tempFredda: fredda, umiditaCalda: humC, umiditaFredda: humF, umidita: humC === null && humF === null ? hum : null, tempNotte: notte, note: '' } };
     }
     // Crescita
     if (/peso|pesa|pesato|lungh|misura/.test(t) || grams || cm) {
@@ -6692,7 +6746,7 @@ const Demo = (() => {
         const dt = Utils.addDays(today, -d); dt.setHours(h, m);
         let um = Math.round(46 + r() * 10 + (d >= 24 && d <= 33 ? 6 : 0)), note = '';
         if (d === 6 && h === 20) { um = 67; note = 'Dopo nebulizzazione abbondante'; }
-        env.push({ id: id(), datetime: Utils.toLocalDT(dt), tempCalda: r1(29 + r() * 2.4 + (h === 20 ? .4 : 0)), tempFredda: r1(23 + r() * 2), umidita: um, note });
+        env.push({ id: id(), datetime: Utils.toLocalDT(dt), tempCalda: r1(29 + r() * 2.4 + (h === 20 ? .4 : 0)), tempFredda: r1(23 + r() * 2), umiditaCalda: Math.max(41, um - 3 - Math.round(r() * 3)), umiditaFredda: note ? um : Math.min(59, um + 2 + Math.round(r() * 2)), note });
       }
     }
     const maintenance = [];

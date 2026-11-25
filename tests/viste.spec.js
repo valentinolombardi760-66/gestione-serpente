@@ -20,7 +20,7 @@ test('dati demo: viste, schede e grafici senza errori', async ({ page }) => {
   }
   await page.evaluate(() => Router.go('dashboard'));
   await expect(page.locator('#todayCard')).toBeVisible();
-  await expect(page.locator('.hs-btn')).toHaveCount(3);
+  await expect(page.locator('.hs-btn')).toHaveCount(4);
   const box = await page.locator('.hs-btn').first().boundingBox();
   expect(box.height).toBeGreaterThanOrEqual(44);
   expect(errors).toEqual([]);
